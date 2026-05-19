@@ -393,27 +393,80 @@ export const cmdGrokImagine: Handler = async (msg, args) => {
   }
   const prompt = args.join(" ");
   const thinking = await msg.reply({
-    embeds: [new EmbedBuilder().setColor(0x00B4FF).setDescription("🎨 Generating image... (this may take a few seconds)")]
+    embeds: [new EmbedBuilder().setColor(0x00B4FF).setDescription("🎨 Generating image... (this may take 30–90 seconds)")]
   });
   try {
-    const encoded = encodeURIComponent(prompt);
-    const seed = Math.floor(Math.random() * 999999);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
-    const res = await fetch(imageUrl);
-    if (!res.ok) throw new Error(`fetch ${res.status}`);
-    const contentType = res.headers.get("content-type") ?? "image/jpeg";
-    const ext = contentType.includes("png") ? "png" : "jpg";
-    const buffer = Buffer.from(await res.arrayBuffer());
+    const apiKey = process.env.AI_HORDE_API_KEY ?? "0000000000";
+
+    const submitRes = await fetch("https://stablehorde.net/api/v2/generate/async", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": apiKey,
+        "Client-Agent": "MewoBot:1.0:discord",
+      },
+      body: JSON.stringify({
+        prompt,
+        params: {
+          width: 1024,
+          height: 1024,
+          steps: 30,
+          cfg_scale: 7,
+          sampler_name: "k_euler_a",
+          n: 1,
+        },
+        nsfw: true,
+        censor_nsfw: false,
+        models: ["Pony Diffusion V6 XL"],
+        r2: true,
+      }),
+    });
+
+    if (!submitRes.ok) {
+      const errData = await submitRes.json() as { message?: string };
+      console.error("[MEWO AI] imagine submit error:", errData);
+      throw new Error("submit failed");
+    }
+
+    const { id } = await submitRes.json() as { id: string };
+
+    let imageUrl: string | null = null;
+    for (let i = 0; i < 36; i++) {
+      await new Promise(r => setTimeout(r, 5000));
+      const checkRes = await fetch(`https://stablehorde.net/api/v2/generate/check/${id}`, {
+        headers: { "Client-Agent": "MewoBot:1.0:discord" },
+      });
+      const check = await checkRes.json() as { done: boolean; faulted?: boolean; queue_position?: number; wait_time?: number };
+      if (check.faulted) throw new Error("generation faulted");
+      if (check.done) {
+        const statusRes = await fetch(`https://stablehorde.net/api/v2/generate/status/${id}`, {
+          headers: { "Client-Agent": "MewoBot:1.0:discord" },
+        });
+        const status = await statusRes.json() as { generations: Array<{ img: string }> };
+        const imgData = status.generations?.[0]?.img;
+        if (imgData) {
+          imageUrl = imgData;
+          break;
+        }
+      }
+    }
+
+    if (!imageUrl) throw new Error("timeout");
+
+    const imgRes = await fetch(imageUrl);
+    if (!imgRes.ok) throw new Error("image download failed");
+    const buffer = Buffer.from(await imgRes.arrayBuffer());
+
     await thinking.delete().catch(() => {});
     await msg.reply({
       embeds: [new EmbedBuilder()
         .setColor(0x00B4FF)
         .setTitle("AI Image Generation")
         .setDescription(`> ${prompt.slice(0, 200)}`)
-        .setImage(`attachment://image.${ext}`)
-        .setFooter({ text: "mewo • ai • Pollinations.ai" })
+        .setImage("attachment://image.webp")
+        .setFooter({ text: "mewo • ai • AI Horde • Pony Diffusion XL" })
       ],
-      files: [{ attachment: buffer, name: `image.${ext}` }],
+      files: [{ attachment: buffer, name: "image.webp" }],
     });
   } catch (e) {
     console.error("[MEWO AI] imagine error:", e);
