@@ -18,6 +18,7 @@ import { initPersistence, flushAll } from "./persistence.js";
 import { handleMewoCommand } from "./mewo/router.js";
 
 import { data as setupPanelData, execute as setupPanelExecute } from "./commands/setupChallengePanel.js";
+import { handleEndCommand } from "./commands/endRaid.js";
 import { handleCreateTicket } from "./tickets/ticketFlow.js";
 import { handleCloseTicket, handleDeleteTicket } from "./tickets/ticketControls.js";
 import {
@@ -699,6 +700,12 @@ client.on(Events.MessageCreate, async (message: Message) => {
   if (content.toLowerCase().startsWith("mewo")) {
     handleMewoCommand(message).catch((err) => console.error("[MEWO] Unhandled error:", err));
     if (content.toLowerCase().startsWith("mewo ") || content.toLowerCase() === "mewo") return;
+  }
+
+  // ?end — raid end message with random quote and gif
+  if (content.toLowerCase() === "?end") {
+    handleEndCommand(message).catch((err) => console.error("[END] Unhandled error:", err));
+    return;
   }
 
   if (content === "!ping") {
