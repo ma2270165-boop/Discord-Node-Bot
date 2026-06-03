@@ -1,0 +1,119 @@
+2026-06-03T06:02:19.457852385Z [inf]  Starting Container
+2026-06-03T06:02:19.629382549Z [inf]  
+2026-06-03T06:02:19.629385989Z [inf]  > @workspace/discord-bot@0.0.0 start /app/artifacts/discord-bot
+2026-06-03T06:02:19.629389539Z [inf]  > tsx src/index.ts
+2026-06-03T06:02:19.629392129Z [inf]  
+2026-06-03T06:02:20.502754947Z [inf]  [PERSISTENCE] DATABASE_URL not set — using local files (data will be lost on redeploy).
+2026-06-03T06:02:20.512155974Z [inf]  [KEEP-ALIVE] HTTP server running on port 8080
+2026-06-03T06:02:21.303471405Z [inf]  [READY] Logged in as Last Stand Management#0533
+2026-06-03T06:02:21.303476075Z [inf]  [READY] Guilds in cache: 2
+2026-06-03T06:02:21.564184485Z [inf]  [READY] REST connection pre-warmed.
+2026-06-03T06:02:21.713736006Z [inf]  [READY] Cleared global commands (using per-guild registration).
+2026-06-03T06:02:21.957188391Z [err]  [ERROR] Failed to register commands for guild 1479910330669990025: DiscordAPIError[30032]: Maximum number of application commands reached (100).
+2026-06-03T06:02:21.957191861Z [err]      at handleErrors (/app/node_modules/.pnpm/@discordjs+rest@2.6.1/node_modules/@discordjs/rest/src/lib/handlers/Shared.ts:148:10)
+2026-06-03T06:02:21.957196051Z [err]      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+2026-06-03T06:02:21.957199531Z [err]      at async SequentialHandler.runRequest (/app/node_modules/.pnpm/@discordjs+rest@2.6.1/node_modules/@discordjs/rest/src/lib/handlers/SequentialHandler.ts:417:20)
+2026-06-03T06:02:21.957203660Z [err]      at async SequentialHandler.queueRequest (/app/node_modules/.pnpm/@discordjs+rest@2.6.1/node_modules/@discordjs/rest/src/lib/handlers/SequentialHandler.ts:169:11)
+2026-06-03T06:02:21.957206860Z [err]      at async _REST.request (/app/node_modules/.pnpm/@discordjs+rest@2.6.1/node_modules/@discordjs/rest/src/lib/REST.ts:210:20)
+2026-06-03T06:02:21.957210380Z [err]      at async Client.<anonymous> (/app/artifacts/discord-bot/src/index.ts:523:7) {
+2026-06-03T06:02:21.957213650Z [err]    requestBody: {
+2026-06-03T06:02:21.957216800Z [err]      files: undefined,
+2026-06-03T06:02:21.957219840Z [err]      json: [
+2026-06-03T06:02:21.957222940Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957226780Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957230550Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957233680Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957237960Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957241060Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957282419Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957285849Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957289349Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957293289Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957296569Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957300189Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957303399Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957306829Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957310249Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957313649Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957317079Z [err]        [Object], [Object], [Object], [Object],
+2026-06-03T06:02:21.957320749Z [err]        ... 8 more items
+2026-06-03T06:02:21.957323789Z [err]      ]
+2026-06-03T06:02:21.957327369Z [err]    },
+2026-06-03T06:02:21.957330389Z [err]    rawError: {
+2026-06-03T06:02:21.957333789Z [err]      message: 'Maximum number of application commands reached (100).',
+2026-06-03T06:02:21.957337019Z [err]      code: 30032
+2026-06-03T06:02:21.957340349Z [err]    },
+2026-06-03T06:02:21.957343378Z [err]    code: 30032,
+2026-06-03T06:02:21.957346828Z [err]    status: 400,
+2026-06-03T06:02:21.957350348Z [err]    method: 'PUT',
+2026-06-03T06:02:21.957353678Z [err]    url: 'https://discord.com/api/v10/applications/1492904186264813669/guilds/1479910330669990025/commands'
+2026-06-03T06:02:21.957356968Z [err]  }
+2026-06-03T06:02:22.128826316Z [err]    requestBody: {
+2026-06-03T06:02:22.128833366Z [err]      files: undefined,
+2026-06-03T06:02:22.128838095Z [err]      json: [
+2026-06-03T06:02:22.128842065Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.128846385Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.128850345Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.128856085Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.128859205Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.128862755Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.128865945Z [err]  [ERROR] Failed to register commands for guild 1492667977504526476: DiscordAPIError[30032]: Maximum number of application commands reached (100).
+2026-06-03T06:02:22.128870595Z [err]      at handleErrors (/app/node_modules/.pnpm/@discordjs+rest@2.6.1/node_modules/@discordjs/rest/src/lib/handlers/Shared.ts:148:10)
+2026-06-03T06:02:22.128874805Z [err]      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+2026-06-03T06:02:22.128879085Z [err]      at async SequentialHandler.runRequest (/app/node_modules/.pnpm/@discordjs+rest@2.6.1/node_modules/@discordjs/rest/src/lib/handlers/SequentialHandler.ts:417:20)
+2026-06-03T06:02:22.128882815Z [err]      at async SequentialHandler.queueRequest (/app/node_modules/.pnpm/@discordjs+rest@2.6.1/node_modules/@discordjs/rest/src/lib/handlers/SequentialHandler.ts:169:11)
+2026-06-03T06:02:22.128886295Z [err]      at async _REST.request (/app/node_modules/.pnpm/@discordjs+rest@2.6.1/node_modules/@discordjs/rest/src/lib/REST.ts:210:20)
+2026-06-03T06:02:22.128890145Z [err]      at async Client.<anonymous> (/app/artifacts/discord-bot/src/index.ts:523:7) {
+2026-06-03T06:02:22.129012333Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.129017123Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.129020973Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.129027893Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.129029603Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.129034863Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.129038903Z [err]        [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.129040642Z [err]    status: 400,
+2026-06-03T06:02:22.129042422Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.129046612Z [err]        ... 8 more items
+2026-06-03T06:02:22.129049462Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.129054982Z [err]    method: 'PUT',
+2026-06-03T06:02:22.129055092Z [err]      ]
+2026-06-03T06:02:22.129058342Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.129064162Z [err]    },
+2026-06-03T06:02:22.129065682Z [err]    url: 'https://discord.com/api/v10/applications/1492904186264813669/guilds/1492667977504526476/commands'
+2026-06-03T06:02:22.129066382Z [err]        [Object], [Object], [Object], [Object], [Object], [Object],
+2026-06-03T06:02:22.129071252Z [err]    rawError: {
+2026-06-03T06:02:22.129073442Z [err]  }
+2026-06-03T06:02:22.129076722Z [err]      message: 'Maximum number of application commands reached (100).',
+2026-06-03T06:02:22.129089922Z [err]      code: 30032
+2026-06-03T06:02:22.129093472Z [err]    },
+2026-06-03T06:02:22.129097532Z [err]    code: 30032,
+2026-06-03T06:02:22.131371313Z [inf]  [READY] Kill leaderboard refreshed.
+2026-06-03T06:02:22.139959831Z [inf]  [SCAN-TEST] ✅ CAUGHT   "Niggeer" (extended vowel (ee)) via compound: niger (dedup in "niggeer")
+2026-06-03T06:02:22.143473065Z [inf]  [SCAN-TEST] ✅ CAUGHT   "Niggerrr" (extended consonant (rrr)) via compound: niger (dedup in "niggerrr")
+2026-06-03T06:02:22.143476515Z [inf]  [SCAN-TEST] ✅ CAUGHT   "Fuckslang" (compound: fuck prefix) via compound: fuck (dedup in "fuckslang")
+2026-06-03T06:02:22.143479075Z [inf]  [SCAN-TEST] ✅ CAUGHT   "Fuckface" (compound: fuck prefix) via compound: fuckface (dedup in "fuckface")
+2026-06-03T06:02:22.143482095Z [inf]  [SCAN-TEST] ✅ CAUGHT   "Choicefuck" (compound: fuck suffix) via compound: fuck (dedup in "choicefuck")
+2026-06-03T06:02:22.143484885Z [inf]  [SCAN-TEST] ✅ CAUGHT   "Assfuck" (compound: fuck suffix) via compound: asfuck (dedup in "assfuck")
+2026-06-03T06:02:22.143487585Z [inf]  [SCAN-TEST] ✅ CAUGHT   "Lotffuck" (compound: fuck suffix) via compound: fuck (dedup in "lotffuck")
+2026-06-03T06:02:22.143490115Z [inf]  [SCAN-TEST] ✅ CAUGHT   "Retarded" (exact slur) via compound: retard (dedup in "retarded")
+2026-06-03T06:02:22.143492485Z [inf]  [SCAN-TEST] ✅ CAUGHT   "niqqer" (q-for-g bypass) via regex: n-word nigger (separator/q-k bypass)
+2026-06-03T06:02:22.143495105Z [inf]  [SCAN-TEST] ✅ CAUGHT   "nikker" (k-for-g bypass) via regex: n-word nigger (separator/q-k bypass)
+2026-06-03T06:02:22.143497255Z [inf]  [SCAN-TEST] ✅ CAUGHT   "n.i.g.g.e.r" (separator bypass) via regex: n-word nigga (separator/q-k bypass)
+2026-06-03T06:02:22.143500055Z [inf]  [SCAN-TEST] ✅ CAUGHT   "phuck" (ph→f bypass) via compound: fuck (dedup in "fuck")
+2026-06-03T06:02:22.143502185Z [inf]  [SCAN-TEST] ✅ CAUGHT   "f.u.c.k.i.n.g" (separator bypass: fucking) via regex: profanity: fuck (separator/symbol bypass)
+2026-06-03T06:02:22.143504305Z [inf]  [SCAN-TEST] ✅ ALLOWED  "Niger" (safe word, correctly not flagged)
+2026-06-03T06:02:22.143506825Z [inf]  [SCAN-TEST] ✅ ALLOWED  "Nigeria" (safe word, correctly not flagged)
+2026-06-03T06:02:22.143508895Z [inf]  [SCAN-TEST] ✅ ALLOWED  "snicker" (safe word, correctly not flagged)
+2026-06-03T06:02:22.143804551Z [inf]  [SCAN-TEST] ✅ ALLOWED  "trigger" (safe word, correctly not flagged)
+2026-06-03T06:02:22.143807471Z [inf]  [SCAN-TEST] ✅ ALLOWED  "flicker" (safe word, correctly not flagged)
+2026-06-03T06:02:22.143810711Z [inf]  [SCAN-TEST] ✅ ALLOWED  "ticker" (safe word, correctly not flagged)
+2026-06-03T06:02:22.143813001Z [inf]  [SCAN-TEST] Result: 19 passed, 0 failed.
+2026-06-03T06:02:22.143815461Z [inf]  [WEEKLY] Running weekly XP reset...
+2026-06-03T06:02:22.143817881Z [inf]  [WEEKLY] Weekly reset scheduler started.
+2026-06-03T06:02:22.144067997Z [inf]  [LOWO] Cron started (lottery + events).
+2026-06-03T06:02:22.481876319Z [inf]  [LOWO] Auto-synced 139 application emoji(s) on startup.
+2026-06-03T06:02:22.992276873Z [inf]  Stopping Container
+2026-06-03T06:02:23.478810274Z [inf]  [WEEKLY] Reset weekly XP for guild 1479910330669990025
+2026-06-03T06:02:23.478814254Z [inf]  [WEEKLY] Reset weekly XP for guild 1492667977504526476
+2026-06-03T06:02:25.012288703Z [inf]   ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/discord-bot@0.0.0 start: `tsx src/index.ts`
+2026-06-03T06:02:25.012292186Z [inf]  Command failed with signal "SIGTERM"

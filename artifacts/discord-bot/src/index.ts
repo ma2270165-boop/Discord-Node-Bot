@@ -326,9 +326,14 @@ const baseCommands = [
   lowoadminData.toJSON(),
 ];
 
+const DISCORD_CMD_LIMIT = 100;
+
 function buildCommandList(): unknown[] {
   const list: unknown[] = [...baseCommands];
-  if (isFunEnabled()) list.push(...FUN_COMMAND_DATA);
+  if (isFunEnabled()) {
+    const slots = DISCORD_CMD_LIMIT - list.length;
+    if (slots > 0) list.push(...FUN_COMMAND_DATA.slice(0, slots));
+  }
   return list;
 }
 

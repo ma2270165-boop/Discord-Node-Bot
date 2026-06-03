@@ -196,3 +196,4 @@ async function dispatchFun(interaction: ChatInputCommandInteraction): Promise<vo
 
 export const FUN_HANDLERS: Record<string, (i: ChatInputCommandInteraction) => Promise<void>> =
   Object.fromEntries(FUN_COMMAND_NAMES.map((name) => [name, dispatchFun]));
+  
