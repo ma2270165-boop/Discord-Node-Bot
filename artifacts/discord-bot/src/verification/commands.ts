@@ -39,14 +39,14 @@ export async function handleSetupVerification(message: Message): Promise<void> {
 
   const embed = new EmbedBuilder()
     .setColor(COLOR_ACCENT)
-    .setTitle("🔐 Last Stand — Verification")
+    .setTitle("LAST STAND")
     .setDescription(
-      "You're one step away from getting access.\n\n" +
-        "Hit **Verify** below. It links your Discord account so we know you're real — " +
-        "and so we can pull you back in if anything happens to the server.\n\n" +
-        "**Takes 10 seconds. No cap.**",
+      "## Verification Required\n\n" +
+      "Click the button below to verify your account and gain access to the server.\n\n" +
+      "**It only takes a few seconds.**",
     )
-    .setFooter({ text: "Last Stand Management • Powered by Discord OAuth2" });
+    .setImage("https://i.imgur.com/YRsGjGb.gif")
+    .setFooter({ text: "Last Stand · Members Only" });
 
   const emojiId = process.env.VERIFICATION_EMOJI_ID;
   const button = new ButtonBuilder()

@@ -21,7 +21,8 @@ async function getGuildRoles(guildId: string, botToken: string): Promise<Discord
   } catch { return []; }
 }
 
-function sendHtml(res: ServerResponse, status: number, title: string, body: string): void {
+function sendHtml(res: ServerResponse, status: number, title: string, body: string, isSuccess = false): void {
+  const accentColor = isSuccess ? "#00ffff" : status >= 500 ? "#ff4444" : "#ffaa00";
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,23 +30,44 @@ function sendHtml(res: ServerResponse, status: number, title: string, body: stri
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>${title} — Last Stand</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#1a1b1e;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-         display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
-    .card{background:#2f3136;border-radius:12px;padding:2.5rem 3rem;max-width:480px;
-          text-align:center;border:1px solid #00ffff44;box-shadow:0 0 40px #00ffff18}
-    h1{font-size:1.6rem;color:#00ffff;margin-bottom:1rem}
-    p{line-height:1.6;color:#b0b3b8;font-size:1rem}
-    .badge{display:inline-block;margin-top:1.5rem;padding:.5rem 1.5rem;
-           background:#00ffff18;border:1px solid #00ffff55;border-radius:6px;
-           color:#00ffff;font-size:.85rem;letter-spacing:.05em}
+    body{
+      background:#0d0e10;
+      color:#e0e0e0;
+      font-family:'Inter',system-ui,sans-serif;
+      display:flex;align-items:center;justify-content:center;
+      min-height:100vh;padding:1.5rem;
+    }
+    .wrap{max-width:420px;width:100%;text-align:center}
+    .clan{font-size:.75rem;font-weight:700;letter-spacing:.2em;color:${accentColor};
+          margin-bottom:2rem;opacity:.7;text-transform:uppercase}
+    .card{
+      background:#16181c;
+      border-radius:16px;
+      padding:2.5rem 2rem;
+      border:1px solid ${accentColor}33;
+      box-shadow:0 0 60px ${accentColor}0d;
+    }
+    .icon{font-size:2.5rem;margin-bottom:1.2rem;display:block}
+    h1{font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:.75rem;line-height:1.3}
+    p{line-height:1.65;color:#8a8f9a;font-size:.95rem}
+    p strong{color:#c9cdd6}
+    .divider{height:1px;background:${accentColor}22;margin:1.5rem 0}
+    .hint{font-size:.8rem;color:#555;margin-top:1.5rem}
+    a{color:${accentColor};text-decoration:none}
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>${title}</h1>
-    <p>${body}</p>
-    <div class="badge">LAST STAND</div>
+  <div class="wrap">
+    <div class="clan">Last Stand</div>
+    <div class="card">
+      <span class="icon">${isSuccess ? "✅" : status >= 500 ? "⚠️" : "❌"}</span>
+      <h1>${title}</h1>
+      <div class="divider"></div>
+      <p>${body}</p>
+    </div>
+    <div class="hint">Need help? Contact <strong>EoN</strong></div>
   </div>
 </body>
 </html>`;
@@ -62,15 +84,15 @@ export async function handleOAuthCallback(
   const guildId = url.searchParams.get("state");
 
   if (!code) {
-    sendHtml(res, 400, "Verification Failed", "No authorization code received. Please try again.");
+    sendHtml(res, 400, "Verification Failed", "Something didn't go right. Head back to the server and try again.");
     return;
   }
   if (!guildId) {
-    sendHtml(res, 400, "Verification Failed", "Invalid link. Ask an admin to re-run <code>?setupverification</code>.");
+    sendHtml(res, 400, "Invalid Link", "This verification link isn't valid. Ask an admin to re-post the verification panel.");
     return;
   }
   if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
-    sendHtml(res, 500, "Configuration Error", "Verification is not fully configured. Contact an admin.");
+    sendHtml(res, 500, "Something Went Wrong", "Verification isn't set up correctly on our end. Contact <strong>EoN</strong>.");
     return;
   }
 
@@ -91,7 +113,7 @@ export async function handleOAuthCallback(
 
     if (!tokenRes.ok) {
       console.error("[OAUTH] Token exchange failed:", tokenRes.status, await tokenRes.text());
-      sendHtml(res, 400, "Verification Failed", "Couldn't complete verification. Try clicking Verify again.");
+      sendHtml(res, 400, "Verification Failed", "Couldn't complete the verification. Try clicking Verify again, or contact <strong>EoN</strong> if it keeps happening.");
       return;
     }
 
@@ -106,7 +128,7 @@ export async function handleOAuthCallback(
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
     if (!userRes.ok) {
-      sendHtml(res, 400, "Verification Failed", "Couldn't fetch your Discord profile. Try again.");
+      sendHtml(res, 400, "Verification Failed", "Couldn't reach your Discord profile. Try again, or contact <strong>EoN</strong>.");
       return;
     }
     const user = (await userRes.json()) as { id: string; username: string };
@@ -163,9 +185,9 @@ export async function handleOAuthCallback(
     }
 
     console.log(`[OAUTH] Verified ${user.username} (${user.id}) for guild ${guildId}`);
-    sendHtml(res, 200, "You're In.", `Verified, <strong>${user.username}</strong>. Head back to the server — you're good to go.`);
+    sendHtml(res, 200, "You're verified.", "Head back to the server — you're good to go.", true);
   } catch (err) {
     console.error("[OAUTH] Unexpected error:", err);
-    sendHtml(res, 500, "Something Went Wrong", "Internal error. Try again or contact an admin.");
+    sendHtml(res, 500, "Something Went Wrong", "Something on our end went wrong. Contact <strong>EoN</strong> and let them know.");
   }
 }
