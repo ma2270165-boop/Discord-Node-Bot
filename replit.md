@@ -92,8 +92,10 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - `src/verification/commands.ts` — verification prefix command handlers
 - `src/help67.ts` — `?help67` command
 
-### New API Server Route
-- `artifacts/api-server/src/routes/oauth.ts` — `GET /api/oauth/callback` handles the OAuth2 redirect, exchanges the code, stores the token, and adds the user to the guild
+### OAuth Callback Location
+- The OAuth callback now runs inside the **bot's own HTTP server** (`src/verification/webCallback.ts`), not the API server. No separate API server deployment needed for verification.
+- Route: `GET /api/oauth/callback` — handled in the bot's `http.createServer` block in `index.ts`
+- `artifacts/api-server/src/routes/oauth.ts` still exists as a backup but is no longer required
 
 ### Database Tables (auto-created on startup)
 - `activity_tracker(user_id, last_message, last_voice, total_messages)` — created in `persistence.ts` ensureSchema and in API server

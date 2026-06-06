@@ -185,6 +185,7 @@ import {
   stopData, executeStop,
 } from "./music/commands.js";
 import { upsertMessageActivity, upsertVoiceActivity } from "./activity/db.js";
+import { handleOAuthCallback } from "./verification/webCallback.js";
 import {
   handleActivityCheck,
   handleKickInactive,
@@ -1024,6 +1025,15 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
 
 const KEEP_ALIVE_PORT = parseInt(process.env.PORT ?? "3000", 10);
 http.createServer((req, res) => {
+  const path = req.url?.split("?")[0];
+  if (path === "/api/oauth/callback") {
+    handleOAuthCallback(req, res).catch((err) => {
+      console.error("[OAUTH] Unhandled error in callback:", err);
+      res.writeHead(500);
+      res.end("Internal Server Error");
+    });
+    return;
+  }
   res.writeHead(200);
   res.end("OK");
 }).listen(KEEP_ALIVE_PORT, () => {
