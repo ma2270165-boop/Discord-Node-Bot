@@ -88,8 +88,6 @@ import {
   executeUniversalLeaderboard,
   handleUniversalLeaderboardSelect,
 } from "./leveling/universalLeaderboard.js";
-import { FUN_COMMAND_DATA, FUN_HANDLERS, FUN_COMMAND_NAMES } from "./fun/commands.js";
-import { isFunEnabled, setFunEnabled } from "./fun/toggle.js";
 import { helpData, executeHelp } from "./commands/help.js";
 import { handlePurgeCommand, purgeConfigData, executePurgeConfig } from "./moderation/purge.js";
 import { handleLowoCommand } from "./lowo/router.js";
@@ -307,16 +305,8 @@ const commands = [
   stopData.toJSON(),
 ];
 
-const memeData = new SlashCommandBuilder()
-  .setName("meme")
-  .setDescription("Toggle meme/fun commands on or off in this server")
-  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
-  .addSubcommand((sub) => sub.setName("on").setDescription("Show the meme/fun command groups"))
-  .addSubcommand((sub) => sub.setName("off").setDescription("Hide the meme/fun command groups"));
-
 const baseCommands = [
   ...commands,
-  memeData.toJSON(),
   helpData.toJSON(),
   purgeConfigData.toJSON(),
   lowoEnableData.toJSON(),
@@ -326,15 +316,8 @@ const baseCommands = [
   lowoadminData.toJSON(),
 ];
 
-const DISCORD_CMD_LIMIT = 100;
-
 function buildCommandList(): unknown[] {
-  const list: unknown[] = [...baseCommands];
-  if (isFunEnabled()) {
-    const slots = DISCORD_CMD_LIMIT - list.length;
-    if (slots > 0) list.push(...FUN_COMMAND_DATA.slice(0, slots));
-  }
-  return list;
+  return [...baseCommands];
 }
 
 // Defined once at startup — not recreated on every interaction
@@ -435,19 +418,6 @@ const slashHandlers: Record<string, (i: ChatInputCommandInteraction) => Promise<
   shuffle: executeShuffle,
   loop: executeLoop,
   stop: executeStop,
-  ...FUN_HANDLERS,
-  meme: async (i) => {
-    const sub = i.options.getSubcommand();
-    if (sub === "on") {
-      setFunEnabled(true);
-      await reregisterPrimaryGuild();
-      await i.editReply({ content: "✅ Meme commands are now **ON**. They'll appear in a moment." });
-    } else {
-      setFunEnabled(false);
-      await reregisterPrimaryGuild();
-      await i.editReply({ content: "🚫 Meme commands are now **OFF** and hidden." });
-    }
-  },
   help: executeHelp,
   purgeconfig: executePurgeConfig,
   lowoenable: (i) => executeLowoEnable(i, reregisterPrimaryGuild),
@@ -463,7 +433,7 @@ async function reregisterPrimaryGuild(): Promise<void> {
   await Promise.all(
     guilds.map((guildId) =>
       rest.put(Routes.applicationGuildCommands(client.user!.id, guildId), { body: list })
-        .then(() => console.log(`[TOGGLE] Re-registered commands for guild ${guildId} (fun=${isFunEnabled()})`))
+        .then(() => console.log(`[TOGGLE] Re-registered commands for guild ${guildId}`))
         .catch((err) => console.error(`[TOGGLE] Failed for guild ${guildId}:`, err))
     )
   );
@@ -778,12 +748,7 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
       "nowplaying", "shuffle", "loop", "stop",
       // Moderation — public result (visible in channel)
       "warnings",
-      // Fun
-      ...FUN_COMMAND_NAMES,
     ]);
-    // /onmeme and /offmeme are admin-only and reply ephemerally
-    const ADMIN_EPHEMERAL = new Set(["onmeme", "offmeme"]);
-    if (ADMIN_EPHEMERAL.has(cmd.commandName)) PUBLIC_COMMANDS.delete(cmd.commandName);
     const isPublic = PUBLIC_COMMANDS.has(cmd.commandName);
     try {
       if (isPublic) {
