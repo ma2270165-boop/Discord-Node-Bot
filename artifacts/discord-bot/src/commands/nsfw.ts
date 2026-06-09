@@ -30,57 +30,93 @@ function pick<T>(arr: T[]): T {
 function isVideo(url: string) { return VIDEO_EXTS.some((e) => url.toLowerCase().endsWith(e)); }
 function isImage(url: string) { return IMAGE_EXTS.some((e) => url.toLowerCase().endsWith(e)); }
 
-// ── xbooru fetcher ─────────────────────────────────────────────────────────
-// Confirmed reachable (HTTP 200) from server environments.
-// pid 0-150 × 50 posts per page = 7,500 images deep per category.
+// ── Shared booru response types ────────────────────────────────────────────
+type BooruPost = { file_url?: string };
+type BooruThibPost = { directory?: number; image?: string };
 
-async function fetchFromXbooru(tags: string, wantVideo: boolean): Promise<string | null> {
+function selectUrl(posts: BooruPost[], wantVideo: boolean): string | null {
+  const typed = wantVideo
+    ? posts.filter((p) => p.file_url && isVideo(p.file_url))
+    : posts.filter((p) => p.file_url && isImage(p.file_url));
+  const pool = typed.length > 0 ? typed : posts.filter((p) => p.file_url);
+  if (pool.length === 0) return null;
+  return pick(pool).file_url ?? null;
+}
+
+// ── xbooru — confirmed HTTP 200 from server IPs ───────────────────────────
+async function fromXbooru(tags: string, wantVideo: boolean): Promise<string | null> {
   try {
     const pid = Math.floor(Math.random() * 150);
-    const url =
-      `https://xbooru.com/index.php?page=dapi&s=post&q=index&json=1` +
-      `&limit=50&pid=${pid}&tags=${encodeURIComponent(tags)}`;
-
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; DiscordBot/1.0)",
-        "Accept": "application/json",
-      },
-      signal: AbortSignal.timeout(10_000),
-    });
+    const res = await fetch(
+      `https://xbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=50&pid=${pid}&tags=${encodeURIComponent(tags)}`,
+      { headers: { "User-Agent": "Mozilla/5.0 (compatible; DiscordBot/1.0)" }, signal: AbortSignal.timeout(10_000) },
+    );
     if (!res.ok) return null;
-
-    const data = await res.json() as Array<{ file_url?: string }> | { post?: Array<{ file_url?: string }> };
+    const data = await res.json() as BooruPost[] | { post?: BooruPost[] };
     const posts = Array.isArray(data) ? data : (data.post ?? []);
-
-    // Filter by wanted media type; fall back to anything if none found
-    const typed = wantVideo
-      ? posts.filter((p) => p.file_url && isVideo(p.file_url))
-      : posts.filter((p) => p.file_url && isImage(p.file_url));
-    const pool = typed.length > 0 ? typed : posts.filter((p) => p.file_url);
-    if (pool.length === 0) return null;
-    return pick(pool).file_url ?? null;
+    return selectUrl(posts, wantVideo);
   } catch { return null; }
 }
 
-// ── Main fetch with 3 attempts on different random pages ───────────────────
-async function fetchNsfwUrl(category: Category, wantVideo: boolean): Promise<string | null> {
-  const tags = CATEGORIES[category];
+// ── tbib — confirmed HTTP 200, URL = img.tbib.org/images/{dir}/{img} ──────
+async function fromTbib(tags: string, wantVideo: boolean): Promise<string | null> {
+  try {
+    const pid = Math.floor(Math.random() * 150);
+    const res = await fetch(
+      `https://tbib.org/index.php?page=dapi&s=post&q=index&json=1&limit=50&pid=${pid}&tags=${encodeURIComponent(tags)}`,
+      { headers: { "User-Agent": "Mozilla/5.0 (compatible; DiscordBot/1.0)" }, signal: AbortSignal.timeout(10_000) },
+    );
+    if (!res.ok) return null;
+    const raw = await res.json() as BooruThibPost[] | { post?: BooruThibPost[] };
+    const items = Array.isArray(raw) ? raw : (raw.post ?? []);
+    // Build file_url from directory + image fields
+    const posts: BooruPost[] = items
+      .filter((p) => p.directory != null && p.image)
+      .map((p) => ({ file_url: `https://img.tbib.org/images/${p.directory}/${p.image}` }));
+    return selectUrl(posts, wantVideo);
+  } catch { return null; }
+}
 
-  // Fire 3 parallel requests with independent random pages — first URL wins
+// ── hypnohub — confirmed HTTP 200, uses file_url ──────────────────────────
+async function fromHypnohub(tags: string, wantVideo: boolean): Promise<string | null> {
+  try {
+    const pid = Math.floor(Math.random() * 100);
+    const res = await fetch(
+      `https://hypnohub.net/index.php?page=dapi&s=post&q=index&json=1&limit=50&pid=${pid}&tags=${encodeURIComponent(tags)}`,
+      { headers: { "User-Agent": "Mozilla/5.0 (compatible; DiscordBot/1.0)" }, signal: AbortSignal.timeout(10_000) },
+    );
+    if (!res.ok) return null;
+    const data = await res.json() as BooruPost[] | { post?: BooruPost[] };
+    const posts = Array.isArray(data) ? data : (data.post ?? []);
+    return selectUrl(posts, wantVideo);
+  } catch { return null; }
+}
+
+// ── Race all 3 sources — first URL wins ───────────────────────────────────
+function raceToFirst(fns: Array<() => Promise<string | null>>): Promise<string | null> {
   return new Promise((resolve) => {
-    let remaining = 3;
-    let resolved = false;
-
-    for (let i = 0; i < 3; i++) {
-      fetchFromXbooru(tags, wantVideo).then((url) => {
-        if (url && !resolved) { resolved = true; resolve(url); }
-        else if (--remaining === 0 && !resolved) resolve(null);
-      }).catch(() => {
-        if (--remaining === 0 && !resolved) resolve(null);
-      });
+    let remaining = fns.length;
+    let done = false;
+    for (const fn of fns) {
+      fn().then((url) => {
+        if (url && !done) { done = true; resolve(url); }
+        else if (--remaining === 0 && !done) resolve(null);
+      }).catch(() => { if (--remaining === 0 && !done) resolve(null); });
     }
   });
+}
+
+async function fetchNsfwUrl(category: Category, wantVideo: boolean): Promise<string | null> {
+  const tags = CATEGORIES[category];
+  const fns = [
+    () => fromXbooru(tags, wantVideo),
+    () => fromTbib(tags, wantVideo),
+    () => fromHypnohub(tags, wantVideo),
+  ];
+  const url = await raceToFirst(fns);
+  if (url) return url;
+  // One full retry
+  return raceToFirst(fns);
 }
 
 // ── Help embed ────────────────────────────────────────────────────────────
