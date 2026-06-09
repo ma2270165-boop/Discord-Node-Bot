@@ -168,6 +168,9 @@ Member clicks Verify button
 | `verification/webCallback.ts` | HTTP handler for `/api/oauth/callback` — full OAuth flow + role assignment |
 | `admin/panel.ts` | HTTP handler for `/admin/panel` + `?abcdadmin` command |
 | `admin/commands.ts` | Slash commands (setup, prefix, setrole, etc.) + `?addroletoallchannelsandcategory` |
+| `admin/dm.ts` | `?dm all <text>` and `?dm @user <text>` — plain-text DMs |
+| `admin/roleAllChannels.ts` | `?roleallcandc <@role> <perm:value>...` / `remove` — permission overwrites on all channels + categories |
+| `commands/nsfw.ts` | `?nsfw` / `?nfsw` command — 4 sources, race pattern, image + video mode |
 | `help67.ts` | `?help67` command |
 | `lowo/` | Full OwO-style game system (see Lowo section) |
 | `fun/` | Fun slash commands (wired out, files intact — can be restored) |
@@ -197,10 +200,57 @@ Prefix: `lowo`. Toggle: `/lowoenable` / `/lowodisable`. Storage: `data/lowo.json
 - **AFK system**: in-memory, clears on next message
 - **Purge**: `.purge` prefix commands
 - **Mewo system**: `mewo` prefix
-- **NSFW command**: `?nsfw` (NSFW channels only)
+- **NSFW command**: `?nsfw` / `?nfsw` — see NSFW section below
 - **End command**: `?end` — raid end message with quote + GIF
 - **Live moderation / censor**: runs before prefix commands on every message
 - **Activity tracking**: silently logs message + voice activity to `activity_tracker`
+
+---
+
+## NSFW Command (`src/commands/nsfw.ts`)
+
+**Trigger**: `?nsfw` or `?nfsw` (startsWith match in `index.ts`)
+
+### Usage
+
+| Command | Result |
+|---|---|
+| `?nsfw` | Random category image |
+| `?nsfw <category>` | Specific category image |
+| `?nsfw video` | Random category video |
+| `?nsfw <category> video` | Specific category video |
+| `?nsfw help` | Shows help embed |
+
+### Categories
+
+`neko` · `hentai` · `waifu` · `milf` · `ahegao` · `maid` · `elf` · `schoolgirl` · `gangbang` · `creampie` · `random`
+
+### Content Policy (enforced via exclusion tags on every query)
+
+`-yaoi -yuri -transgender -futanari -trap -crossdressing -furry -anthro -kemono`
+Strictly straight, human, non-furry content only.
+
+### Image Sources (all confirmed HTTP 200 from Railway/server IPs)
+
+| Source | Type | Notes |
+|---|---|---|
+| **xbooru** | GIFs / images | Standard booru JSON API, `file_url` field |
+| **tbib** | GIFs / images | Booru API, URL built from `directory` + `image` fields → `img.tbib.org/images/{dir}/{img}` |
+| **hypnohub** | MP4 videos | Booru JSON API, `file_url` field |
+| **Redgifs** | MP4 videos (HD/SD) | Requires free guest token auto-fetched from `/v2/auth/temporary`, cached 23 h |
+
+All 4 sources fire simultaneously — first to respond wins. Auto-retries once on full failure.
+
+### Fetch Strategy
+
+- **Image mode**: strictly returns `.gif/.jpg/.png/.webp` only — never `.mp4` (which renders as blank embed)
+- **Video mode**: strictly returns `.mp4/.webm` only — sent as plain text URL for Discord auto-play
+- **Page randomisation**: random `pid` 0–30 (max 1,500 posts deep); if random page is empty, falls back to `pid=0` automatically
+- **Redgifs**: uses `start=0–200` offset for randomisation; image mode disabled (Redgifs is MP4-only)
+
+### Blocked Sources (do not re-add without re-testing)
+
+Gelbooru (401), Rule34 JSON API (now requires auth), waifu.im (403), waifu.pics (timeout), purrbot (403), nekos.life (500), hmtai (timeout), realbooru (API offline), aibooru (returns .zip), paheal (tags return 0 results), atfbooru (Cloudflare), danbooru (explicit requires paid account).
 
 ---
 
