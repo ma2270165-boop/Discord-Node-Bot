@@ -7,7 +7,6 @@ const CATEGORIES = {
   hentai:  { purrbot: "hentai",  waifupics: "hentai",  nekoslife: "hentai"            },
   blowjob: { purrbot: "blowjob", waifupics: "blowjob", nekoslife: "blowjob"           },
   anal:    { purrbot: "anal",    waifupics: "anal",    nekoslife: null                },
-  yuri:    { purrbot: "yuri",    waifupics: null,      nekoslife: "les_hentai"        },
   solo:    { purrbot: "solo",    waifupics: null,      nekoslife: null                },
   waifu:   { purrbot: null,      waifupics: "waifu",   nekoslife: null                },
   random:  { purrbot: null,      waifupics: null,      nekoslife: "random_hentai_gif" },
