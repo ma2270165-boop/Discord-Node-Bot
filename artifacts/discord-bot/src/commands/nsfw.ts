@@ -248,15 +248,34 @@ async function fetchNsfwUrl(category: Category, wantVideo: boolean): Promise<str
     () => fromYandere(map.moebooru, wantVideo),
     () => fromRedgifs(map.redgifs, wantVideo),
   ];
-  // Try up to 4 rounds — each round re-races all sources with seenSet filtering active
   for (let attempt = 0; attempt < 4; attempt++) {
     const url = await raceToFirst(fns);
     if (!url) continue;
-    if (!seenSet.has(url)) {
-      markSeen(url);
-      return url;
-    }
-    // URL was seen (race returned before selectUrl could filter it) — retry
+    if (!seenSet.has(url)) { markSeen(url); return url; }
+  }
+  return null;
+}
+
+// ── Freeform search — any term the user types ─────────────────────────────
+async function fetchFreeformUrl(term: string, wantVideo: boolean): Promise<string | null> {
+  // Booru APIs use underscores for multi-word tags
+  const booruTerm = term.replace(/\s+/g, "_");
+  const booruTags = `${booruTerm} rating:explicit ${EXCL}`;
+  const mbTags    = `${booruTerm} rating:e ${EXCL_MB}`;
+  const rgQuery   = `anime ${term} hentai`;
+
+  const fns = [
+    () => fromXbooru(booruTags, wantVideo),
+    () => fromTbib(booruTags, wantVideo),
+    () => fromRule34xxx(booruTags, wantVideo),
+    () => fromKonachan(mbTags, wantVideo),
+    () => fromYandere(mbTags, wantVideo),
+    () => fromRedgifs(rgQuery, wantVideo),
+  ];
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const url = await raceToFirst(fns);
+    if (!url) continue;
+    if (!seenSet.has(url)) { markSeen(url); return url; }
   }
   return null;
 }
@@ -371,35 +390,27 @@ export async function handleNsfwCommand(message: Message): Promise<void> {
   }
 
   let wantVideo = false;
-  let category: Category;
+  let url: string | null;
 
   if (!arg1) {
     // ?nsfw → random image
-    category = pick(VALID_CATS.filter((c) => c !== "random"));
+    url = await fetchNsfwUrl(pick(VALID_CATS.filter((c) => c !== "random")), false);
   } else if (arg1 === "video") {
     // ?nsfw video → random video
     wantVideo = true;
-    category = pick(VALID_CATS.filter((c) => c !== "random"));
+    url = await fetchNsfwUrl(pick(VALID_CATS.filter((c) => c !== "random")), true);
   } else if ((VALID_CATS as string[]).includes(arg1)) {
-    // ?nsfw <cat> [video]
-    category = arg1 as Category;
+    // ?nsfw <known cat> [video]
     wantVideo = arg2 === "video";
+    url = await fetchNsfwUrl(arg1 as Category, wantVideo);
   } else {
-    await message.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(0xff4444)
-          .setTitle("❌ Unknown category")
-          .setDescription(
-            `**Valid:** ${VALID_CATS.map((c) => `\`${c}\``).join(" · ")}\n` +
-            `Use \`?nsfw help\` for full usage info.`,
-          ),
-      ],
-    });
-    return;
+    // Freeform search — grab everything after ?nsfw, strip trailing "video" keyword
+    const rawArgs = parts.slice(1);
+    wantVideo = rawArgs[rawArgs.length - 1]?.toLowerCase() === "video";
+    const termParts = wantVideo ? rawArgs.slice(0, -1) : rawArgs;
+    const term = termParts.join(" ").trim().toLowerCase();
+    url = await fetchFreeformUrl(term, wantVideo);
   }
-
-  const url = await fetchNsfwUrl(category, wantVideo);
 
   if (!url) {
     await message.reply("❌ Couldn't fetch right now. Try again in a moment.");
@@ -407,7 +418,7 @@ export async function handleNsfwCommand(message: Message): Promise<void> {
   }
 
   if (wantVideo) {
-    await message.reply({ content: `🔞 **${category}** — ${url}` });
+    await message.reply({ content: url });
     return;
   }
 
