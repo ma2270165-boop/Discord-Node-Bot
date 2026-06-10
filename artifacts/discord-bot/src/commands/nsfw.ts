@@ -238,16 +238,36 @@ function raceToFirst(fns: Array<() => Promise<string | null>>): Promise<string |
   });
 }
 
+// Build source list depending on image vs video mode.
+// Video mode: Redgifs only — it's a dedicated video platform with reliable anime hentai MP4s.
+//   Three parallel queries (different random offsets) for better variety.
+// Image mode: all 6 booru/image sources.
+function buildFns(
+  booruTags: string,
+  mbTags: string,
+  rgQuery: string,
+  wantVideo: boolean,
+): Array<() => Promise<string | null>> {
+  if (wantVideo) {
+    return [
+      () => fromRedgifs(rgQuery, true),
+      () => fromRedgifs(`${rgQuery} animated`, true),
+      () => fromRedgifs(`hentai ${rgQuery}`, true),
+    ];
+  }
+  return [
+    () => fromXbooru(booruTags, false),
+    () => fromTbib(booruTags, false),
+    () => fromRule34xxx(booruTags, false),
+    () => fromKonachan(mbTags, false),
+    () => fromYandere(mbTags, false),
+    () => fromRedgifs(rgQuery, false),
+  ];
+}
+
 async function fetchNsfwUrl(category: Category, wantVideo: boolean): Promise<string | null> {
   const map = CATEGORIES[category];
-  const fns = [
-    () => fromXbooru(map.booru, wantVideo),
-    () => fromTbib(map.booru, wantVideo),
-    () => fromRule34xxx(map.booru, wantVideo),
-    () => fromKonachan(map.moebooru, wantVideo),
-    () => fromYandere(map.moebooru, wantVideo),
-    () => fromRedgifs(map.redgifs, wantVideo),
-  ];
+  const fns = buildFns(map.booru, map.moebooru, map.redgifs, wantVideo);
   for (let attempt = 0; attempt < 4; attempt++) {
     const url = await raceToFirst(fns);
     if (!url) continue;
@@ -258,20 +278,12 @@ async function fetchNsfwUrl(category: Category, wantVideo: boolean): Promise<str
 
 // ── Freeform search — any term the user types ─────────────────────────────
 async function fetchFreeformUrl(term: string, wantVideo: boolean): Promise<string | null> {
-  // Booru APIs use underscores for multi-word tags
   const booruTerm = term.replace(/\s+/g, "_");
   const booruTags = `${booruTerm} rating:explicit ${EXCL}`;
   const mbTags    = `${booruTerm} rating:e ${EXCL_MB}`;
   const rgQuery   = `anime ${term} hentai`;
 
-  const fns = [
-    () => fromXbooru(booruTags, wantVideo),
-    () => fromTbib(booruTags, wantVideo),
-    () => fromRule34xxx(booruTags, wantVideo),
-    () => fromKonachan(mbTags, wantVideo),
-    () => fromYandere(mbTags, wantVideo),
-    () => fromRedgifs(rgQuery, wantVideo),
-  ];
+  const fns = buildFns(booruTags, mbTags, rgQuery, wantVideo);
   for (let attempt = 0; attempt < 4; attempt++) {
     const url = await raceToFirst(fns);
     if (!url) continue;
