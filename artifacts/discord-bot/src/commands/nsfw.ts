@@ -482,7 +482,7 @@ async function sendBulk(
     if (results.length === 0) { await message.reply("❌ Couldn't fetch any videos right now."); return; }
     for (let i = 0; i < results.length; i += 5) {
       const lines = results.slice(i, i + 5).map(
-        (r, j) => `[Content ${i + j + 1}](${r.url}) | [Source](<${r.post}>)`,
+        (r, j) => `${r.url} — [Source ${i + j + 1}](<${r.post}>)`,
       );
       await message.reply({ content: lines.join("\n") });
     }
@@ -673,11 +673,11 @@ export async function handleNsfwCommand(message: Message): Promise<void> {
     return;
   }
 
-  // ── Single video — Lawliet format: [Content 1](url) | [Source](<post>) ────
+  // ── Single video — raw URL so Discord embeds it, source link inline ────────
   if (wantVideo) {
     const result = await fetcher(true);
     if (!result) { await message.reply("❌ Couldn't fetch right now. Try again in a moment."); return; }
-    await message.reply({ content: `[Content 1](${result.url}) | [Source](<${result.post}>)` });
+    await message.reply({ content: `${result.url} — [Source](<${result.post}>)` });
     return;
   }
 
