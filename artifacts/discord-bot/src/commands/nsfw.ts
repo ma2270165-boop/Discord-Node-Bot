@@ -139,7 +139,7 @@ const CATEGORIES = {
 type Category = keyof typeof CATEGORIES;
 const VALID_CATS = Object.keys(CATEGORIES) as Category[];
 
-const VIDEO_EXTS = [".mp4", ".webm"];
+const VIDEO_EXTS = [".mp4", ".webm", ".gif"];  // gifs animate inline in Discord
 const IMAGE_EXTS = [".gif", ".png", ".jpg", ".jpeg", ".webp"];
 
 // ── Seen-URL deduplication ─────────────────────────────────────────────────
@@ -377,7 +377,7 @@ async function fetchNsfwUrl(category: Category, wantVideo: boolean): Promise<Nsf
   const map = CATEGORIES[category];
   const dbTag = danbooruTag(map.moebooru);
   const fns = buildFns(map.booru, map.moebooru, dbTag, wantVideo);
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < 8; attempt++) {
     const result = await raceToFirst(fns);
     if (!result) continue;
     if (!seenSet.has(result.url)) { markSeen(result.url); return result; }
@@ -393,7 +393,7 @@ async function fetchFreeformUrl(term: string, wantVideo: boolean): Promise<NsfwR
   const dbTag     = `${booruTerm} rating:e`;
 
   const fns = buildFns(booruTags, mbTags, dbTag, wantVideo);
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < 8; attempt++) {
     const result = await raceToFirst(fns);
     if (!result) continue;
     if (!seenSet.has(result.url)) { markSeen(result.url); return result; }
@@ -445,17 +445,19 @@ async function downloadImage(url: string): Promise<Buffer | null> {
   } catch { return null; }
 }
 
-// ── Fetch one image URL + download it, retrying on bad URLs ───────────────
+// ── Fetch a media URL + download it, retrying on bad URLs ─────────────────
+// Works for both images and videos — Discord embeds anything uploaded as a file.
 async function fetchAndDownload(
   fetcher: (video: boolean) => Promise<NsfwResult | null>,
-): Promise<{ buffer: Buffer; ext: string } | null> {
+  wantVideo = false,
+): Promise<{ buffer: Buffer; ext: string; post: string } | null> {
   for (let attempt = 0; attempt < 3; attempt++) {
-    const result = await fetcher(false);
+    const result = await fetcher(wantVideo);
     if (!result) return null;
     const buffer = await downloadImage(result.url);
     if (buffer) {
-      const ext = result.url.split(".").pop()?.split("?")[0]?.toLowerCase() ?? "gif";
-      return { buffer, ext };
+      const ext = result.url.split(".").pop()?.split("?")[0]?.toLowerCase() ?? (wantVideo ? "mp4" : "gif");
+      return { buffer, ext, post: result.post };
     }
     markSeen(result.url);
   }
@@ -472,45 +474,30 @@ async function sendBulk(
   count: number,
   wantVideo: boolean,
 ): Promise<void> {
-  if (wantVideo) {
-    const tasks = Array.from({ length: count }, () => fetcher(true));
-    const settled = await Promise.allSettled(tasks);
-    const results = settled
-      .filter((r): r is PromiseFulfilledResult<NsfwResult> => r.status === "fulfilled" && !!r.value)
-      .map((r) => r.value);
-
-    if (results.length === 0) { await message.reply("❌ Couldn't fetch any videos right now."); return; }
-    for (let i = 0; i < results.length; i += 5) {
-      const lines = results.slice(i, i + 5).map(
-        (r, j) => `${r.url} — [Source ${i + j + 1}](<${r.post}>)`,
-      );
-      await message.reply({ content: lines.join("\n") });
-    }
-    return;
-  }
-
-  // Images: kick off ALL downloads simultaneously, then pipeline in batches of 5.
-  // Batch N+1 has been downloading while batch N was being sent.
-  const allTasks = Array.from({ length: count }, () => fetchAndDownload(fetcher));
+  // Kick off ALL downloads simultaneously (images or videos), pipeline in batches of 5.
+  // Sending as file attachments guarantees Discord embeds them inline regardless of CDN.
+  const allTasks = Array.from({ length: count }, () => fetchAndDownload(fetcher, wantVideo));
   let sent = false;
 
   for (let i = 0; i < allTasks.length; i += 5) {
     const batchResults = await Promise.allSettled(allTasks.slice(i, i + 5));
-    const images = batchResults
-      .filter((r): r is PromiseFulfilledResult<{ buffer: Buffer; ext: string }> =>
+    const items = batchResults
+      .filter((r): r is PromiseFulfilledResult<{ buffer: Buffer; ext: string; post: string }> =>
         r.status === "fulfilled" && r.value !== null)
       .map((r) => r.value);
 
-    if (images.length > 0) {
-      const files = images.map((img, j) =>
-        new AttachmentBuilder(img.buffer, { name: `nsfw_${i + j + 1}.${img.ext}` }),
+    if (items.length > 0) {
+      const files = items.map((item, j) =>
+        new AttachmentBuilder(item.buffer, { name: `nsfw_${i + j + 1}.${item.ext}` }),
       );
       await message.reply({ files });
       sent = true;
     }
   }
 
-  if (!sent) await message.reply("❌ Couldn't fetch any images right now.");
+  if (!sent) {
+    await message.reply(`❌ Couldn't fetch any ${wantVideo ? "videos" : "images"} right now.`);
+  }
 }
 
 // ── Help embed ────────────────────────────────────────────────────────────
@@ -673,11 +660,11 @@ export async function handleNsfwCommand(message: Message): Promise<void> {
     return;
   }
 
-  // ── Single video — raw URL so Discord embeds it, source link inline ────────
+  // ── Single video — download + attach so Discord embeds it natively ─────────
   if (wantVideo) {
-    const result = await fetcher(true);
-    if (!result) { await message.reply("❌ Couldn't fetch right now. Try again in a moment."); return; }
-    await message.reply({ content: `${result.url} — [Source](<${result.post}>)` });
+    const item = await fetchAndDownload(fetcher, true);
+    if (!item) { await message.reply("❌ Couldn't fetch right now. Try again in a moment."); return; }
+    await message.reply({ files: [new AttachmentBuilder(item.buffer, { name: `nsfw.${item.ext}` })] });
     return;
   }
 
