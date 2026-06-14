@@ -680,9 +680,13 @@ export async function handleNsfwCommand(message: Message): Promise<void> {
   const maybeCount = parseInt(arg1 ?? "", 10);
   const isBulk = !isNaN(maybeCount) && maybeCount >= 1;
 
+  // Normalise any "video"/"videos"/"vid" variant to the canonical word "video"
+  const normalise = (s: string | undefined) =>
+    s && /^vid(eo)?s?$/i.test(s) ? "video" : s;
+
   // In bulk mode, shift args so category/video slots move one position right
-  const bulkCatArg = isBulk ? parts[2]?.toLowerCase() : arg1;
-  const bulkVidArg = isBulk ? parts[3]?.toLowerCase() : arg2;
+  const bulkCatArg = normalise(isBulk ? parts[2]?.toLowerCase() : arg1);
+  const bulkVidArg = normalise(isBulk ? parts[3]?.toLowerCase() : arg2);
   const bulkCount  = isBulk ? Math.min(maybeCount, 20) : 1;
 
   let wantVideo = false;
@@ -697,8 +701,8 @@ export async function handleNsfwCommand(message: Message): Promise<void> {
     fetcher = (v) => fetchNsfwUrl(bulkCatArg as Category, v);
   } else if (!isBulk) {
     // Freeform search — only available in single mode
-    const rawArgs = parts.slice(1);
-    wantVideo = rawArgs[rawArgs.length - 1]?.toLowerCase() === "video";
+    const rawArgs = parts.slice(1).map(normalise) as string[];
+    wantVideo = rawArgs[rawArgs.length - 1] === "video";
     const termParts = wantVideo ? rawArgs.slice(0, -1) : rawArgs;
     const term = termParts.join(" ").trim().toLowerCase();
     fetcher = (v) => fetchFreeformUrl(term, v);
