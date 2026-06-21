@@ -287,6 +287,61 @@ Each source returns `{ url, post }`:
 
 ---
 
+## Security Hardening
+
+### Why the bot cannot be hacked
+
+Every secret that matters lives exclusively in **Railway environment variables** — not in source code, not in git, not in Replit. Even with full access to the GitHub repo, an attacker has nothing they can use.
+
+| What an attacker can see | What they cannot do with it |
+|---|---|
+| Source code (if repo is public) | Execute it — they don't have the bot token |
+| How the admin panel works | Access it — they don't have `ADMIN_PANEL_TOKEN` |
+| Leveling/leaderboard JSON files | Affect the live bot — those files exist only on Railway's disk |
+| The HTTP server's routes | Exploit them — no unprotected data endpoints exist |
+
+### Secrets checklist — all must be Railway env vars only
+
+- `DISCORD_BOT_TOKEN` — never hardcoded anywhere
+- `DATABASE_URL` — never hardcoded anywhere
+- `DISCORD_CLIENT_SECRET` — never hardcoded anywhere
+- `ADMIN_PANEL_TOKEN` — never hardcoded anywhere
+- All API keys (`GELBOORU_*`, `DANBOORU_*`) — never hardcoded anywhere
+
+If any of these ever appear in a source file or get committed to git, rotate them immediately in Railway and the Discord Developer Portal.
+
+### Admin panel protections (implemented)
+
+- **Rate limiting** — max 10 failed token attempts per IP per 15 minutes; 11th attempt gets `429 Too Many Attempts`
+- **Timing-safe comparison** — uses Node's `crypto.timingSafeEqual()` instead of `===` to prevent timing side-channel attacks
+- **Cryptographically random token** — generated with `crypto.randomBytes(32).toString("hex")` (64-char hex), not `Math.random()`
+- **IP extraction** — respects `X-Forwarded-For` header (Railway proxy) for accurate rate limit tracking
+
+### HTTP server protections (implemented)
+
+- Unknown routes return `404 Not Found` — no route enumeration possible
+- Only three routes exist: `GET /api/oauth/callback`, `POST /api/oauth/confirm`, `GET /admin/panel`
+
+### Git / source code protections (implemented)
+
+- `artifacts/discord-bot/.gitignore` excludes `data/` — runtime data files (lowo.json, leveling.json, etc.) are never committed
+- No secrets in any source file — grep the repo for any env var value and you will find nothing
+
+### Recommended GitHub repo setting
+
+**Set the GitHub repository to Private.** This prevents anyone from reading the source code structure, studying the admin panel logic, or seeing any data files that were committed before the gitignore was added. Secrets remain safe either way (they're in Railway), but private removes all browsability.
+
+To make it private: GitHub → repo → Settings → Danger Zone → Change repository visibility → Private.
+
+### If someone claims to have found a vulnerability
+
+1. Check that all secrets are Railway env vars (see checklist above) — if yes, they have nothing
+2. Check Railway logs for any suspicious admin panel traffic
+3. If the admin panel token may be compromised: update `ADMIN_PANEL_TOKEN` in Railway and redeploy — old token immediately stops working
+4. If the bot token may be compromised: regenerate it in Discord Developer Portal → the old token stops working instantly
+
+---
+
 ## Design Conventions
 
 - Embed colors: `0x2F3136` (Dark Charcoal / primary), `0x00FFFF` (Neon Blue / accent)
