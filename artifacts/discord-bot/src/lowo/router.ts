@@ -1,6 +1,6 @@
 import type { Message } from "discord.js";
 import { isLowoEnabled } from "./toggle.js";
-import { handleOwoModeCommand } from "./owoMode.js";
+import { dispatchOwoCommand } from "./owoMode.js";
 import { cmdCowoncy, cmdDaily, cmdGive, cmdVote, cmdRep, cmdTag, cmdCash } from "./economy.js";
 import { cmdHunt, cmdZoo, cmdSell, cmdSacrifice, cmdLowodex } from "./hunt.js";
 import { cmdAutoSell, cmdBulkSell, cmdAnimalStat } from "./autoSell.js";
@@ -516,7 +516,7 @@ export async function handleLowoCommand(message: Message): Promise<boolean> {
         await message.reply(
           "**🔁 | Lowo Mode switched to OwO Mode (Mode 2).**\n" +
           "The Lowo system has been replaced with the OwO bot.\n" +
-          "Use the `owo` prefix for all commands (e.g. `owo hunt`, `owo daily`).\n" +
+          "Use the `lowo` prefix for all commands (e.g. `lowo hunt`, `lowo daily`).\n" +
           "Type `lowo 1` to return to normal Lowo."
         ).catch(() => {});
       } else {
@@ -528,6 +528,14 @@ export async function handleLowoCommand(message: Message): Promise<boolean> {
       }
       return true;
     }
+  }
+
+  // ─── Mode 2 — OWO replacement: route `lowo <cmd>` straight to OWO handlers ─
+  if (_lowoMode === 2) {
+    const parts2 = content.split(/\s+/);
+    parts2.shift(); // drop "lowo"
+    const sub2owo = parts2.shift()?.toLowerCase() ?? "help";
+    return dispatchOwoCommand(message, sub2owo, parts2);
   }
 
   // ─── Channel whitelist middleware ─────────────────────────────────────────

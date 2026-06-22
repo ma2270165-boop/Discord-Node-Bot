@@ -509,19 +509,11 @@ const OWO_HANDLERS: Record<string, OwoHandler> = {
   ping:  (m)  => owoPing(m),
 };
 
-export async function handleOwoModeCommand(message: Message): Promise<boolean> {
-  const content = message.content.trim();
-  const lower = content.toLowerCase();
-  if (!lower.startsWith("owo ") && lower !== "owo") return false;
-
-  const parts = content.split(/\s+/);
-  parts.shift(); // remove "owo"
-  const sub = parts.shift()?.toLowerCase() ?? "help";
-  const args = parts;
-
+// Direct dispatcher — called by router.ts with already-parsed sub + args
+export async function dispatchOwoCommand(message: Message, sub: string, args: string[]): Promise<boolean> {
   const handler = OWO_HANDLERS[sub];
   if (!handler) {
-    await message.reply(`**🚫 |** Could not find command \`${sub}\`. Try \`owo help\`!`);
+    await message.reply(`**🚫 |** Could not find OwO command \`${sub}\`. Try \`lowo help\`!`);
     return true;
   }
   try {
@@ -531,4 +523,16 @@ export async function handleOwoModeCommand(message: Message): Promise<boolean> {
     await message.reply("⚠️ Something went wrong processing that command.").catch(() => {});
   }
   return true;
+}
+
+export async function handleOwoModeCommand(message: Message): Promise<boolean> {
+  const content = message.content.trim();
+  const lower = content.toLowerCase();
+  if (!lower.startsWith("owo ") && lower !== "owo") return false;
+
+  const parts = content.split(/\s+/);
+  parts.shift(); // remove "owo"
+  const sub = parts.shift()?.toLowerCase() ?? "help";
+  const args = parts;
+  return dispatchOwoCommand(message, sub, args);
 }
