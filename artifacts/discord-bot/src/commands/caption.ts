@@ -173,8 +173,8 @@ export async function handleCaptionCommand(message: Message): Promise<void> {
     const measureC = createCanvas(imgW, 200);
     const mctx     = measureC.getContext("2d");
 
-    // Max font = 15% of image width (like real Assyst), capped at 120
-    const maxFs = Math.min(120, Math.round(imgW * 0.15));
+    // Real Assyst caps around 60–65px — start there, shrink if it wraps
+    const maxFs = Math.min(64, Math.round(imgW * 0.09));
 
     const { fontSize, lines } = fitText(
       mctx,
