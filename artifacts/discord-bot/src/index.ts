@@ -19,6 +19,7 @@ import { handleMewoCommand } from "./mewo/router.js";
 
 import { data as setupPanelData, execute as setupPanelExecute } from "./commands/setupChallengePanel.js";
 import { handleEndCommand } from "./commands/endRaid.js";
+import { handleKillCommand } from "./fun/killCommand.js";
 import { handleNsfwCommand } from "./commands/nsfw.js";
 import { handleCaptionCommand } from "./commands/caption.js";
 import { handleCreateTicket } from "./tickets/ticketFlow.js";
@@ -696,6 +697,12 @@ client.on(Events.MessageCreate, async (message: Message) => {
     handlePurgeCommand(message).catch((err) =>
       console.error("[PURGE] Unhandled error:", err)
     );
+    return;
+  }
+
+  // .kill — troll nuke sequence
+  if (content.toLowerCase() === ".kill") {
+    handleKillCommand(message).catch((err) => console.error("[KILL] Unhandled error:", err));
     return;
   }
 
