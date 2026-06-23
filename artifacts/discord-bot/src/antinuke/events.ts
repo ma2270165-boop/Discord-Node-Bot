@@ -1,5 +1,5 @@
 import type { Client, Guild } from "discord.js";
-import { Events, AuditLogEvent, EmbedBuilder, ChannelType } from "discord.js";
+import { Events, AuditLogEvent, EmbedBuilder } from "discord.js";
 import { getConfig, getWhitelist, recordAction } from "./store.js";
 import type { ActionType } from "./store.js";
 import { quarantine } from "./mitigation.js";
@@ -10,8 +10,8 @@ import { postAntiNukeLog } from "./logger.js";
 // Fires before the anti-nuke action pipeline — catches external apps using
 // existing webhooks to flood a channel without ever hitting webhookCreate.
 const webhookMsgTimestamps = new Map<string, number[]>();
-const WEBHOOK_MSG_LIMIT  = 8;   // messages
-const WEBHOOK_MSG_WINDOW = 10_000; // ms
+const WEBHOOK_MSG_LIMIT  = 3;    // messages — lowered: spammers rarely send more than 2-3
+const WEBHOOK_MSG_WINDOW = 8_000; // ms
 
 // Discord audit log takes ~1–2 seconds to populate after an action.
 const AUDIT_DELAY_MS = 1_500;
@@ -288,21 +288,42 @@ export function registerAntiNukeEvents(client: Client): void {
       let installedByTag  = "Unknown";
       let usedByLine      = "*(webhook messages carry no user — sent by external app)*";
 
-      // 1. Fetch webhook info (owner = who installed it), then delete it
+      // Helper: does this channel support fetchWebhooks / bulkDelete?
+      const canFetchWebhooks = "fetchWebhooks" in channel;
+      const canBulkDelete    = "bulkDelete" in channel;
+
+      // 1. Collect author display names from recent spam messages BEFORE deleting
+      const webhookAuthorNames = new Set<string>();
       try {
-        if (channel.type === ChannelType.GuildText) {
-          const webhooks = await channel.fetchWebhooks();
+        if ("messages" in channel) {
+          const fetched = await (channel as { messages: { fetch: (o: object) => Promise<Map<string, { webhookId: string | null; author: { username: string } }>> } }).messages.fetch({ limit: 20 });
+          (fetched as Map<string, { webhookId: string | null; author: { username: string } }>).forEach(m => {
+            if (m.webhookId === webhookId && m.author.username) {
+              webhookAuthorNames.add(m.author.username);
+            }
+          });
+        }
+      } catch { /* non-critical */ }
+
+      if (webhookAuthorNames.size > 0) {
+        usedByLine = [...webhookAuthorNames].map(n => `\`${n}\``).join(", ") +
+          " *(webhook display name — set by the external app)*";
+      }
+
+      // 2. Fetch webhook info (owner = who installed it), then delete it
+      try {
+        if (canFetchWebhooks) {
+          const webhooks = await (channel as { fetchWebhooks: () => Promise<Map<string, { id: string; name: string; owner: { id: string; tag?: string } | null; delete: (reason: string) => Promise<void> }>> }).fetchWebhooks();
           const wh = webhooks.get(webhookId);
           if (wh) {
             webhookName = wh.name;
 
-            // wh.owner is the Discord user who created the webhook
             if (wh.owner) {
               installedById  = wh.owner.id;
-              installedByTag = "tag" in wh.owner ? (wh.owner as { tag: string }).tag : wh.owner.id;
+              installedByTag = wh.owner.tag ?? wh.owner.id;
             }
 
-            // Check audit log for WebhookCreate to cross-confirm the creator
+            // Cross-confirm with audit log for WebhookCreate
             try {
               await new Promise<void>(res => setTimeout(res, 500));
               const logs  = await guild.fetchAuditLogs({ type: AuditLogEvent.WebhookCreate, limit: 10 });
@@ -323,17 +344,17 @@ export function registerAntiNukeEvents(client: Client): void {
         console.error("[ANTINUKE] Webhook fetch/delete failed:", e);
       }
 
-      // 2. Bulk-delete the spam messages (Discord limit: messages < 14 days old)
+      // 3. Bulk-delete the spam messages (Discord limit: messages < 14 days old)
       try {
-        if (channel.type === ChannelType.GuildText) {
-          const fetched = await channel.messages.fetch({ limit: 50 });
-          const spam = fetched.filter(
-            m =>
-              m.webhookId === webhookId &&
-              Date.now() - m.createdTimestamp < 14 * 24 * 60 * 60 * 1_000,
+        if (canBulkDelete && "messages" in channel) {
+          const fetched = await (channel as { messages: { fetch: (o: object) => Promise<Map<string, { id: string; webhookId: string | null; createdTimestamp: number }>> } }).messages.fetch({ limit: 50 });
+          const spam = new Map(
+            [...(fetched as Map<string, { id: string; webhookId: string | null; createdTimestamp: number }>).entries()].filter(
+              ([, m]) => m.webhookId === webhookId && Date.now() - m.createdTimestamp < 14 * 24 * 60 * 60 * 1_000,
+            ),
           );
           if (spam.size > 0) {
-            await channel.bulkDelete(spam, true);
+            await (channel as { bulkDelete: (msgs: Map<string, unknown>, filterOld?: boolean) => Promise<unknown> }).bulkDelete(spam, true);
             purgedMessages = spam.size;
           }
         }
@@ -341,7 +362,7 @@ export function registerAntiNukeEvents(client: Client): void {
         console.error("[ANTINUKE] Bulk delete failed:", e);
       }
 
-      // 3. Timeout + DM the webhook creator (1 hour)
+      // 4. Timeout + DM the webhook creator (1 hour)
       let timedOutLine = "Could not resolve creator as a guild member";
       if (installedById !== "Unknown") {
         try {
@@ -351,7 +372,6 @@ export function registerAntiNukeEvents(client: Client): void {
             await member.timeout(oneHour, "Anti-Nuke: webhook spam");
             timedOutLine = `<@${installedById}> timed out for **1 hour**`;
 
-            // DM them
             try {
               await member.send("You ain't doing shit 😂");
             } catch { /* DMs may be closed */ }
@@ -362,24 +382,6 @@ export function registerAntiNukeEvents(client: Client): void {
           console.error("[ANTINUKE] Timeout failed:", e);
           timedOutLine = "Timeout failed (missing permissions or member left)";
         }
-      }
-
-      // 4. Build the "who used" line from the spam messages' author field
-      const webhookAuthorNames = new Set<string>();
-      try {
-        if (channel.type === ChannelType.GuildText) {
-          const fetched = await channel.messages.fetch({ limit: 20 });
-          fetched
-            .filter(m => m.webhookId === webhookId)
-            .forEach(m => {
-              if (m.author.username) webhookAuthorNames.add(m.author.username);
-            });
-        }
-      } catch { /* non-critical */ }
-
-      if (webhookAuthorNames.size > 0) {
-        usedByLine = [...webhookAuthorNames].map(n => `\`${n}\``).join(", ") +
-          " *(webhook display name — set by the external app)*";
       }
 
       // 5. Log the intervention
