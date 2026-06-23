@@ -22,64 +22,87 @@ export async function quarantine(
     `[ANTINUKE] 🚨 Quarantine | Guild: ${guild.name} (${guild.id}) | Executor: ${executorId} | Action: ${action}`,
   );
 
-  // ── 1. Fetch executor ────────────────────────────────────────────────────
-  let tag = `Unknown (${executorId})`;
+  const actionsTaken: string[] = [];
+
+  // ── 1. Strip roles (human member) ────────────────────────────────────────
   try {
     const member = await guild.members.fetch(executorId);
-    tag = `${member.user.tag} (${executorId})`;
-
-    // ── 2. Strip all roles immediately ──────────────────────────────────
     try {
       await member.roles.set([], "Anti-Nuke: automated quarantine");
+      actionsTaken.push("• All roles stripped");
     } catch (e) {
       console.error("[ANTINUKE] Role strip failed:", (e as Error).message);
     }
   } catch {
-    // Member already left or bot can't fetch — role strip skipped
+    // Executor is a bot/app or already left — role strip skipped
+    actionsTaken.push("• Executor is not a guild member (bot/app) — role strip skipped");
   }
 
-  // ── 3. Build esports-style embed ─────────────────────────────────────────
+  // ── 2. Webhook cleanup (when trigger was webhookCreate) ───────────────────
+  if (action === "webhookCreate") {
+    try {
+      const guildWebhooks = await guild.fetchWebhooks();
+      // Delete webhooks created in the last 2 minutes (the rogue burst)
+      const cutoff = Date.now() - 120_000;
+      const rogue = guildWebhooks.filter(wh => wh.createdTimestamp > cutoff);
+      let deleted = 0;
+      for (const wh of rogue.values()) {
+        try {
+          await wh.delete("Anti-Nuke: rogue webhook cleanup");
+          deleted++;
+        } catch { /* skip if already gone */ }
+      }
+      if (deleted > 0) {
+        actionsTaken.push(`• Deleted **${deleted}** rogue webhook(s)`);
+      }
+    } catch (e) {
+      console.error("[ANTINUKE] Webhook cleanup failed:", e);
+    }
+  }
+
+  // ── 3. Build embed ───────────────────────────────────────────────────────
   const embed = new EmbedBuilder()
     .setColor(0xFF0000)
     .setAuthor({ name: "⚡ ANTI-NUKE SYSTEM — THREAT NEUTRALIZED" })
-    .setTitle("🚨 Rogue Staff Quarantined")
+    .setTitle("🚨 Rogue Executor Quarantined")
     .setDescription(
-      "A staff member exceeded the action threshold and has been **immediately quarantined**.\n" +
-      "All roles have been stripped.",
+      "An executor exceeded the action threshold and has been **immediately quarantined**.",
     )
     .addFields(
-      { name: "👤 Threat Actor",    value: `<@${executorId}>\n\`${tag}\``, inline: true },
-      { name: "⚡ Trigger",         value: `\`${action}\``,                inline: true },
-      { name: "📋 Details",         value: details,                        inline: false },
-      { name: "🔒 Actions Taken",   value: "• All roles stripped", inline: false },
+      { name: "👤 Threat Actor",  value: `<@${executorId}> (\`${executorId}\`)`, inline: true },
+      { name: "⚡ Trigger",       value: `\`${action}\``,                        inline: true },
+      { name: "📋 Details",       value: details,                                 inline: false },
+      { name: "🔒 Actions Taken", value: actionsTaken.join("\n") || "*(none)*",   inline: false },
     )
     .setFooter({ text: `Last Stand Anti-Nuke • ${guild.name}` })
     .setTimestamp();
 
-  // ── 5. Send to log channel ───────────────────────────────────────────────
+  // ── 4. Send to log channel ────────────────────────────────────────────────
   const config = await getConfig(guild.id);
   if (config.logChannelId) {
     try {
       const ch = await client.channels.fetch(config.logChannelId);
       if (ch && !ch.isDMBased() && ch.isTextBased()) {
-        await (ch as TextChannel).send({ embeds: [embed] });
+        const pingIds = config.logPingIds ?? [];
+        const content = pingIds.length > 0 ? pingIds.map(id => `<@${id}>`).join(" ") : undefined;
+        await (ch as TextChannel).send({ content, embeds: [embed] });
       }
     } catch (e) {
       console.error("[ANTINUKE] Log channel send failed:", (e as Error).message);
     }
   }
 
-  // ── 6. DM server owner ───────────────────────────────────────────────────
+  // ── 5. DM server owner ────────────────────────────────────────────────────
   try {
     const owner = await guild.fetchOwner();
     await owner.send({
-      content: `🚨 **Anti-Nuke alert on \`${guild.name}\`!** A rogue staff member has had all their roles stripped.`,
+      content: `🚨 **Anti-Nuke alert on \`${guild.name}\`!** Action: \`${action}\``,
       embeds: [embed],
     });
   } catch (e) {
     console.error("[ANTINUKE] Owner DM failed:", (e as Error).message);
   }
 
-  // Allow re-entry after 60 seconds (in case ban gets reversed)
+  // Allow re-entry after 60 seconds
   setTimeout(() => quarantineActive.delete(key), 60_000);
 }

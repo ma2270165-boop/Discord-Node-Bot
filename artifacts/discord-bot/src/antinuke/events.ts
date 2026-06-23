@@ -1,10 +1,17 @@
 import type { Client, Guild } from "discord.js";
-import { Events, AuditLogEvent, EmbedBuilder } from "discord.js";
+import { Events, AuditLogEvent, EmbedBuilder, ChannelType } from "discord.js";
 import { getConfig, getWhitelist, recordAction } from "./store.js";
 import type { ActionType } from "./store.js";
 import { quarantine } from "./mitigation.js";
 import { recordChannelSnap, recordRoleSnap, recordBanSnap } from "./snapshot.js";
 import { postAntiNukeLog } from "./logger.js";
+
+// ── Webhook message spam tracking (per webhookId) ─────────────────────────────
+// Fires before the anti-nuke action pipeline — catches external apps using
+// existing webhooks to flood a channel without ever hitting webhookCreate.
+const webhookMsgTimestamps = new Map<string, number[]>();
+const WEBHOOK_MSG_LIMIT  = 8;   // messages
+const WEBHOOK_MSG_WINDOW = 10_000; // ms
 
 // Discord audit log takes ~1–2 seconds to populate after an action.
 const AUDIT_DELAY_MS = 1_500;
@@ -248,5 +255,89 @@ export function registerAntiNukeEvents(client: Client): void {
     })().catch(err => console.error("[ANTINUKE] emojiDelete handler:", err));
   });
 
-  console.log("[ANTINUKE] Event listeners registered (channelDelete, roleDelete, ban, kick, guildUpdate, webhookCreate, emojiDelete)");
+  // ── Webhook Message Spam ──────────────────────────────────────────────────
+  // An external app can use an existing webhook to flood a channel without
+  // ever triggering webhookCreate. We track message rate per webhookId and
+  // kill the webhook + bulk-delete spam if it exceeds the limit.
+  client.on(Events.MessageCreate, (message) => {
+    if (!message.webhookId || !message.guild) return;
+    const webhookId = message.webhookId;
+    const now       = Date.now();
+    const cutoff    = now - WEBHOOK_MSG_WINDOW;
+
+    const times = (webhookMsgTimestamps.get(webhookId) ?? []).filter(t => t > cutoff);
+    times.push(now);
+    webhookMsgTimestamps.set(webhookId, times);
+
+    if (times.length < WEBHOOK_MSG_LIMIT) return;
+
+    // Clear immediately to prevent multiple simultaneous triggers
+    webhookMsgTimestamps.delete(webhookId);
+
+    const guild   = message.guild;
+    const channel = message.channel;
+
+    void (async () => {
+      const config = await getConfig(guild.id);
+      if (!config.enabled) return;
+
+      let deletedWebhook = false;
+      let purgedMessages = 0;
+
+      // 1. Delete the offending webhook
+      try {
+        if (channel.type === ChannelType.GuildText) {
+          const webhooks = await channel.fetchWebhooks();
+          const wh = webhooks.get(webhookId);
+          if (wh) {
+            await wh.delete("Anti-Nuke: webhook message spam");
+            deletedWebhook = true;
+          }
+        }
+      } catch (e) {
+        console.error("[ANTINUKE] Webhook delete failed:", e);
+      }
+
+      // 2. Bulk-delete the spam messages (Discord limit: messages < 14 days old)
+      try {
+        if (channel.type === ChannelType.GuildText) {
+          const fetched = await channel.messages.fetch({ limit: 50 });
+          const spam = fetched.filter(
+            m =>
+              m.webhookId === webhookId &&
+              Date.now() - m.createdTimestamp < 14 * 24 * 60 * 60 * 1_000,
+          );
+          if (spam.size > 0) {
+            await channel.bulkDelete(spam, true);
+            purgedMessages = spam.size;
+          }
+        }
+      } catch (e) {
+        console.error("[ANTINUKE] Bulk delete failed:", e);
+      }
+
+      // 3. Log the intervention
+      const embed = new EmbedBuilder()
+        .setColor(0xFF0000)
+        .setTitle("🚨 Webhook Spam Blocked")
+        .setDescription(
+          `A webhook was sending **${times.length}** messages in ${WEBHOOK_MSG_WINDOW / 1_000}s ` +
+          `and has been automatically stopped.`,
+        )
+        .addFields(
+          { name: "Webhook ID",       value: `\`${webhookId}\``,                        inline: true },
+          { name: "Channel",          value: `<#${channel.id}>`,                         inline: true },
+          { name: "🗑️ Actions Taken", value:
+            `• Webhook ${deletedWebhook ? "**deleted**" : "delete failed (already gone?)"}\n` +
+            `• **${purgedMessages}** spam message(s) bulk-deleted`,
+            inline: false },
+        )
+        .setFooter({ text: "Last Stand Anti-Nuke — Webhook Spam Guard" })
+        .setTimestamp();
+
+      await postAntiNukeLog(client, guild, embed);
+    })().catch(err => console.error("[ANTINUKE] webhook message spam handler:", err));
+  });
+
+  console.log("[ANTINUKE] Event listeners registered (channelDelete, roleDelete, ban, kick, guildUpdate, webhookCreate, emojiDelete, webhookMsgSpam)");
 }
