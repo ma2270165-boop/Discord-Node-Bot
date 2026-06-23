@@ -4,6 +4,7 @@ export type ActionType =
   | "channelDelete"
   | "roleDelete"
   | "ban"
+  | "kick"
   | "guildUpdate"
   | "webhookCreate"
   | "emojiDelete";
@@ -11,6 +12,7 @@ export type ActionType =
 export interface AntiNukeConfig {
   enabled: boolean;
   logChannelId: string | null;
+  logPingIds: string[];
   thresholds: Record<ActionType, { count: number; window: number }>;
 }
 
@@ -18,6 +20,7 @@ export const DEFAULT_THRESHOLDS: AntiNukeConfig["thresholds"] = {
   channelDelete: { count: 3, window: 20_000 },
   roleDelete:    { count: 3, window: 20_000 },
   ban:           { count: 5, window: 20_000 },
+  kick:          { count: 5, window: 20_000 },
   guildUpdate:   { count: 2, window: 20_000 },
   webhookCreate: { count: 5, window: 20_000 },
   emojiDelete:   { count: 5, window: 20_000 },
@@ -98,12 +101,13 @@ export async function getConfig(guildId: string): Promise<AntiNukeConfig> {
     const cfg: AntiNukeConfig = {
       enabled:      raw?.enabled      ?? false,
       logChannelId: raw?.logChannelId ?? null,
+      logPingIds:   (raw as Partial<AntiNukeConfig>)?.logPingIds ?? [],
       thresholds:   { ...DEFAULT_THRESHOLDS, ...(raw?.thresholds ?? {}) },
     };
     configCache.set(guildId, cfg);
     return cfg;
   } catch {
-    return { enabled: false, logChannelId: null, thresholds: { ...DEFAULT_THRESHOLDS } };
+    return { enabled: false, logChannelId: null, logPingIds: [], thresholds: { ...DEFAULT_THRESHOLDS } };
   }
 }
 

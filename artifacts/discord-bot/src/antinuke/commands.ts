@@ -295,7 +295,81 @@ export async function handleAntiNukeCommand(message: Message, client: Client): P
     await saveConfig(guildId, cfg);
     await message.reply({ embeds: [
       new EmbedBuilder().setColor(COLOR_OK)
-        .setDescription(`✅ Anti-Nuke alerts will be sent to <#${channel.id}>.`),
+        .setDescription(`✅ Anti-Nuke logs will be posted to <#${channel.id}>.\n\nUse \`?antinuke logs p add @user\` to add people to ping on every log.`),
+    ]});
+    return;
+  }
+
+  // ── ?antinuke logs p add/remove/list ─────────────────────────────────────
+  if (sub === "logs") {
+    const action = parts[2]?.toLowerCase(); // should be "p"
+    const modifier = parts[3]?.toLowerCase(); // add / remove / list
+
+    if (action !== "p") {
+      await message.reply({ embeds: [
+        new EmbedBuilder().setColor(COLOR_ERR)
+          .setDescription(
+            "❌ Unknown logs sub-command.\n\n" +
+            "**Usage:**\n" +
+            "`?antinuke logs p add @user` — ping this person on every log\n" +
+            "`?antinuke logs p remove @user` — stop pinging them\n" +
+            "`?antinuke logs p list` — show everyone being pinged",
+          ),
+      ]});
+      return;
+    }
+
+    const cfg = await getConfig(guildId);
+    cfg.logPingIds ??= [];
+
+    if (modifier === "add") {
+      const target = message.mentions.users.first() ?? (parts[4] ? { id: parts[4] } : null);
+      if (!target) {
+        await message.reply({ embeds: [new EmbedBuilder().setColor(COLOR_ERR)
+          .setDescription("❌ Mention a user to add. Example: `?antinuke logs p add @user`")] });
+        return;
+      }
+      if (!cfg.logPingIds.includes(target.id)) {
+        cfg.logPingIds.push(target.id);
+        await saveConfig(guildId, cfg);
+      }
+      await message.reply({ embeds: [new EmbedBuilder().setColor(COLOR_OK)
+        .setDescription(`✅ <@${target.id}> will now be **pinged** on every anti-nuke log entry.`)] });
+      return;
+    }
+
+    if (modifier === "remove") {
+      const target = message.mentions.users.first() ?? (parts[4] ? { id: parts[4] } : null);
+      if (!target) {
+        await message.reply({ embeds: [new EmbedBuilder().setColor(COLOR_ERR)
+          .setDescription("❌ Mention a user to remove. Example: `?antinuke logs p remove @user`")] });
+        return;
+      }
+      cfg.logPingIds = cfg.logPingIds.filter(id => id !== target.id);
+      await saveConfig(guildId, cfg);
+      await message.reply({ embeds: [new EmbedBuilder().setColor(COLOR_OK)
+        .setDescription(`✅ <@${target.id}> will no longer be pinged on log entries.`)] });
+      return;
+    }
+
+    // list (default)
+    const ids = cfg.logPingIds;
+    const logRef = cfg.logChannelId ? `<#${cfg.logChannelId}>` : "*not set — use `?antinuke log #channel` first*";
+    await message.reply({ embeds: [
+      new EmbedBuilder()
+        .setColor(COLOR_INF)
+        .setTitle("📋 Anti-Nuke Log Pings")
+        .addFields(
+          { name: "Log Channel", value: logRef, inline: false },
+          {
+            name: "Pinged Users",
+            value: ids.length === 0
+              ? "*No one is being pinged. Add someone with `?antinuke logs p add @user`*"
+              : ids.map(id => `<@${id}> (\`${id}\`)`).join("\n"),
+            inline: false,
+          },
+        )
+        .setFooter({ text: "These users are pinged on every ban, kick, channel delete, role delete, and more" }),
     ]});
     return;
   }
@@ -358,7 +432,11 @@ export async function handleAntiNukeCommand(message: Message, client: Client): P
     const cfg = await getConfig(guildId);
     const whitelist = await getWhitelist(guildId);
     const statusIcon = cfg.enabled ? "🟢" : "🔴";
-    const logRef = cfg.logChannelId ? `<#${cfg.logChannelId}>` : "*not set*";
+    const logRef  = cfg.logChannelId ? `<#${cfg.logChannelId}>` : "*not set*";
+    const pingIds = cfg.logPingIds ?? [];
+    const pingsRef = pingIds.length > 0
+      ? pingIds.map(id => `<@${id}>`).join(", ")
+      : "*none — add with `?antinuke logs p add @user`*";
 
     const thresholdLines = (Object.entries(cfg.thresholds) as [string, { count: number; window: number }][])
       .map(([k, v]) => `• \`${k}\`: **${v.count}** actions in **${v.window / 1000}s**`)
@@ -369,10 +447,11 @@ export async function handleAntiNukeCommand(message: Message, client: Client): P
         .setColor(cfg.enabled ? COLOR_OK : COLOR_ERR)
         .setTitle(`${statusIcon} Anti-Nuke Status — ${message.guild.name}`)
         .addFields(
-          { name: "Status",       value: cfg.enabled ? "**Enabled**" : "**Disabled**", inline: true },
-          { name: "Log Channel",  value: logRef,                                        inline: true },
-          { name: "Whitelisted",  value: `${whitelist.size} user(s)`,                  inline: true },
-          { name: "Thresholds",   value: thresholdLines,                                inline: false },
+          { name: "Status",        value: cfg.enabled ? "**Enabled**" : "**Disabled**", inline: true },
+          { name: "Log Channel",   value: logRef,                                        inline: true },
+          { name: "Whitelisted",   value: `${whitelist.size} user(s)`,                  inline: true },
+          { name: "Log Pings",     value: pingsRef,                                      inline: false },
+          { name: "Thresholds",    value: thresholdLines,                                inline: false },
         )
         .setFooter({ text: "?antinuke help — full command list" }),
     ]});
@@ -421,25 +500,32 @@ function buildHelpEmbed(): EmbedBuilder {
     .setDescription("Protects the server against rogue staff mass-deleting channels, roles, or banning members.")
     .addFields(
       {
-        name: "Commands",
+        name: "⚙️ Setup",
         value: [
           "`?antinuke enable` — Activate the system",
           "`?antinuke disable` — Deactivate the system",
-          "`?antinuke log #channel` — Set the alert log channel",
-          "`?antinuke whitelist add @user` — Trust a staff member",
-          "`?antinuke whitelist remove @user` — Revoke trust",
-          "`?antinuke whitelist list` — Show all trusted users",
-          "`?antinuke status` — Full status + thresholds",
-          "`?antinuke restore @user` — ⚠️ Restore everything the offender destroyed (owner only)",
+          "`?antinuke log #channel` — Set the channel where logs are posted",
+          "`?antinuke logs p add @user` — Ping this user on every log entry",
+          "`?antinuke logs p remove @user` — Stop pinging them",
+          "`?antinuke logs p list` — Show everyone being pinged",
         ].join("\n"),
       },
       {
-        name: "How it works",
+        name: "🛡️ Whitelist & Info",
+        value: [
+          "`?antinuke whitelist add @user` — Trust a staff member (exempt from checks)",
+          "`?antinuke whitelist remove @user` — Revoke trust",
+          "`?antinuke whitelist list` — Show all trusted users",
+          "`?antinuke status` — Full status, log pings, and thresholds",
+          "`?antinuke restore @user` — ⚠️ Undo everything the offender destroyed (owner only)",
+        ].join("\n"),
+      },
+      {
+        name: "📋 What gets logged",
         value:
-          "The bot monitors channel/role deletes, bans, and guild updates. " +
-          "When a staff member crosses a threshold their roles are immediately stripped. " +
-          "Use `?antinuke restore @offender` afterwards to recreate deleted channels & roles, " +
-          "unban wrongfully banned members, and DM each one a private re-join invite.",
+          "Every **ban**, **kick**, **channel delete**, **role delete**, **server update**, " +
+          "**webhook create**, and **emoji delete** is posted to the log channel with a ping. " +
+          "If a threshold is crossed the offender is quarantined and a 🚨 alert is posted.",
       },
     )
     .setFooter({ text: "Guild owner + bot are always exempt from anti-nuke checks" });
