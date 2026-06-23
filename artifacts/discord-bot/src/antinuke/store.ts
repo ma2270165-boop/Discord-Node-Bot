@@ -15,12 +15,12 @@ export interface AntiNukeConfig {
 }
 
 export const DEFAULT_THRESHOLDS: AntiNukeConfig["thresholds"] = {
-  channelDelete: { count: 3, window: 10_000 },
-  roleDelete:    { count: 3, window: 10_000 },
-  ban:           { count: 5, window: 10_000 },
-  guildUpdate:   { count: 2, window:  5_000 },
-  webhookCreate: { count: 5, window: 10_000 },
-  emojiDelete:   { count: 5, window: 10_000 },
+  channelDelete: { count: 3, window: 20_000 },
+  roleDelete:    { count: 3, window: 20_000 },
+  ban:           { count: 5, window: 20_000 },
+  guildUpdate:   { count: 2, window: 20_000 },
+  webhookCreate: { count: 5, window: 20_000 },
+  emojiDelete:   { count: 5, window: 20_000 },
 };
 
 // ── In-memory sliding window ───────────────────────────────────────────────
