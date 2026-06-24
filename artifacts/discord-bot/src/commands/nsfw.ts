@@ -10,6 +10,13 @@ const EXCL =
   "-guro -scat -vore -ryona -inflation -gore -blood -death -torture -necrophilia " +
   "-3d -3dcg -realistic -photorealistic -live_action -real_person";
 
+// Lighter exclusion list for freeform searches — user already specifies what they want,
+// so only block truly unacceptable content, not niche tags they might intentionally search.
+const EXCL_FREE =
+  "-furry -anthro " +
+  "-guro -scat -vore -gore -ryona -inflation " +
+  "-real_person -live_action -3d -3dcg -photorealistic";
+
 // ── Category map ──────────────────────────────────────────────────────────
 // booru:    xbooru / tbib / rule34.xxx tag string
 // moebooru: konachan / yande.re tag string (rating:e, simpler vocab, image-only)
@@ -23,117 +30,117 @@ const EXCL_MB =
 
 const CATEGORIES = {
   // ── Originals ──────────────────────────────────────────────────────────────
-  neko:            { booru: `animated hentai cat_girl rating:explicit ${EXCL}`,                   moebooru: `cat_girl rating:e ${EXCL_MB}`,                 redgifs: "anime neko hentai"               },
-  hentai:          { booru: `animated hentai rating:explicit ${EXCL}`,                            moebooru: `sex rating:e ${EXCL_MB}`,                      redgifs: "anime hentai 2d"                 },
-  waifu:           { booru: `animated hentai 1girl rating:explicit ${EXCL}`,                      moebooru: `1girl rating:e ${EXCL_MB}`,                    redgifs: "anime waifu hentai"              },
-  milf:            { booru: `animated hentai milf rating:explicit ${EXCL}`,                       moebooru: `milf rating:e ${EXCL_MB}`,                     redgifs: "anime milf hentai"               },
-  ahegao:          { booru: `animated hentai ahegao rating:explicit ${EXCL}`,                     moebooru: `ahegao rating:e ${EXCL_MB}`,                   redgifs: "ahegao anime hentai"             },
-  maid:            { booru: `animated hentai maid rating:explicit ${EXCL}`,                       moebooru: `maid rating:e ${EXCL_MB}`,                     redgifs: "anime maid hentai"               },
-  elf:             { booru: `animated hentai elf rating:explicit ${EXCL}`,                        moebooru: `elf_ears rating:e ${EXCL_MB}`,                 redgifs: "anime elf hentai"                },
-  schoolgirl:      { booru: `animated hentai school_uniform rating:explicit ${EXCL}`,             moebooru: `school_uniform rating:e ${EXCL_MB}`,           redgifs: "anime schoolgirl hentai"         },
-  gangbang:        { booru: `animated hentai gangbang rating:explicit ${EXCL}`,                   moebooru: `gangbang rating:e ${EXCL_MB}`,                 redgifs: "anime gangbang hentai"           },
-  creampie:        { booru: `animated hentai creampie rating:explicit ${EXCL}`,                   moebooru: `creampie rating:e ${EXCL_MB}`,                 redgifs: "anime creampie hentai"           },
-  random:          { booru: `animated hentai rating:explicit ${EXCL}`,                            moebooru: `rating:e ${EXCL_MB}`,                          redgifs: "anime hentai"                    },
+  neko:            { booru: `hentai cat_girl rating:explicit ${EXCL}`,                   moebooru: `cat_girl rating:e ${EXCL_MB}`,                 redgifs: "anime neko hentai"               },
+  hentai:          { booru: `hentai rating:explicit ${EXCL}`,                            moebooru: `sex rating:e ${EXCL_MB}`,                      redgifs: "anime hentai 2d"                 },
+  waifu:           { booru: `hentai 1girl rating:explicit ${EXCL}`,                      moebooru: `1girl rating:e ${EXCL_MB}`,                    redgifs: "anime waifu hentai"              },
+  milf:            { booru: `hentai milf rating:explicit ${EXCL}`,                       moebooru: `milf rating:e ${EXCL_MB}`,                     redgifs: "anime milf hentai"               },
+  ahegao:          { booru: `hentai ahegao rating:explicit ${EXCL}`,                     moebooru: `ahegao rating:e ${EXCL_MB}`,                   redgifs: "ahegao anime hentai"             },
+  maid:            { booru: `hentai maid rating:explicit ${EXCL}`,                       moebooru: `maid rating:e ${EXCL_MB}`,                     redgifs: "anime maid hentai"               },
+  elf:             { booru: `hentai elf rating:explicit ${EXCL}`,                        moebooru: `elf_ears rating:e ${EXCL_MB}`,                 redgifs: "anime elf hentai"                },
+  schoolgirl:      { booru: `hentai school_uniform rating:explicit ${EXCL}`,             moebooru: `school_uniform rating:e ${EXCL_MB}`,           redgifs: "anime schoolgirl hentai"         },
+  gangbang:        { booru: `hentai gangbang rating:explicit ${EXCL}`,                   moebooru: `gangbang rating:e ${EXCL_MB}`,                 redgifs: "anime gangbang hentai"           },
+  creampie:        { booru: `hentai creampie rating:explicit ${EXCL}`,                   moebooru: `creampie rating:e ${EXCL_MB}`,                 redgifs: "anime creampie hentai"           },
+  random:          { booru: `hentai rating:explicit ${EXCL}`,                            moebooru: `rating:e ${EXCL_MB}`,                          redgifs: "anime hentai"                    },
 
   // ── Sex acts ───────────────────────────────────────────────────────────────
-  blowjob:         { booru: `animated hentai blowjob rating:explicit ${EXCL}`,                    moebooru: `fellatio rating:e ${EXCL_MB}`,                 redgifs: "anime blowjob hentai"            },
-  anal:            { booru: `animated hentai anal rating:explicit ${EXCL}`,                       moebooru: `anal rating:e ${EXCL_MB}`,                     redgifs: "anime anal hentai"               },
-  paizuri:         { booru: `animated hentai paizuri rating:explicit ${EXCL}`,                    moebooru: `paizuri rating:e ${EXCL_MB}`,                  redgifs: "anime paizuri titfuck hentai"    },
-  cumshot:         { booru: `animated hentai cum rating:explicit ${EXCL}`,                        moebooru: `cum rating:e ${EXCL_MB}`,                      redgifs: "anime cumshot hentai"            },
-  riding:          { booru: `animated hentai cowgirl_position rating:explicit ${EXCL}`,           moebooru: `cowgirl_position rating:e ${EXCL_MB}`,         redgifs: "anime riding hentai"             },
-  doggystyle:      { booru: `animated hentai doggystyle rating:explicit ${EXCL}`,                 moebooru: `doggystyle rating:e ${EXCL_MB}`,               redgifs: "anime doggystyle hentai"         },
-  missionary:      { booru: `animated hentai missionary rating:explicit ${EXCL}`,                 moebooru: `missionary rating:e ${EXCL_MB}`,               redgifs: "anime missionary hentai"         },
-  handjob:         { booru: `animated hentai handjob rating:explicit ${EXCL}`,                    moebooru: `handjob rating:e ${EXCL_MB}`,                  redgifs: "anime handjob hentai"            },
-  footjob:         { booru: `animated hentai footjob rating:explicit ${EXCL}`,                    moebooru: `footjob rating:e ${EXCL_MB}`,                  redgifs: "anime footjob hentai"            },
-  threesome:       { booru: `animated hentai threesome rating:explicit ${EXCL}`,                  moebooru: `threesome rating:e ${EXCL_MB}`,                redgifs: "anime threesome hentai"          },
-  facial:          { booru: `animated hentai cum_on_face rating:explicit ${EXCL}`,                moebooru: `cum_on_face rating:e ${EXCL_MB}`,              redgifs: "anime facial hentai"             },
-  deepthroat:      { booru: `animated hentai deepthroat rating:explicit ${EXCL}`,                 moebooru: `deepthroat rating:e ${EXCL_MB}`,               redgifs: "anime deepthroat hentai"         },
-  squirt:          { booru: `animated hentai squirting rating:explicit ${EXCL}`,                  moebooru: `squirting rating:e ${EXCL_MB}`,                redgifs: "anime squirting hentai"          },
-  masturbation:    { booru: `animated hentai masturbation rating:explicit ${EXCL}`,               moebooru: `masturbation rating:e ${EXCL_MB}`,             redgifs: "anime masturbation hentai"       },
-  dildo:           { booru: `animated hentai dildo rating:explicit ${EXCL}`,                      moebooru: `dildo rating:e ${EXCL_MB}`,                    redgifs: "anime dildo hentai"              },
-  vibrator:        { booru: `animated hentai vibrator rating:explicit ${EXCL}`,                   moebooru: `vibrator rating:e ${EXCL_MB}`,                 redgifs: "anime vibrator hentai"           },
-  dp:              { booru: `animated hentai double_penetration rating:explicit ${EXCL}`,         moebooru: `double_penetration rating:e ${EXCL_MB}`,       redgifs: "anime double penetration hentai" },
-  public:          { booru: `animated hentai public_sex rating:explicit ${EXCL}`,                 moebooru: `sex_in_public rating:e ${EXCL_MB}`,            redgifs: "anime public sex hentai"         },
-  cunnilingus:     { booru: `animated hentai cunnilingus rating:explicit ${EXCL}`,                moebooru: `cunnilingus rating:e ${EXCL_MB}`,              redgifs: "anime cunnilingus hentai"        },
-  reverse_cowgirl: { booru: `animated hentai reverse_cowgirl_position rating:explicit ${EXCL}`,   moebooru: `reverse_cowgirl_position rating:e ${EXCL_MB}`, redgifs: "anime reverse cowgirl hentai"    },
-  standing:        { booru: `animated hentai standing_sex rating:explicit ${EXCL}`,               moebooru: `standing_sex rating:e ${EXCL_MB}`,             redgifs: "anime standing sex hentai"       },
-  spanking:        { booru: `animated hentai spanking rating:explicit ${EXCL}`,                   moebooru: `spanking rating:e ${EXCL_MB}`,                 redgifs: "anime spanking hentai"           },
-  fingering:       { booru: `animated hentai fingering rating:explicit ${EXCL}`,                  moebooru: `fingering rating:e ${EXCL_MB}`,                redgifs: "anime fingering hentai"          },
-  thighjob:        { booru: `animated hentai thigh_sex rating:explicit ${EXCL}`,                  moebooru: `thigh_sex rating:e ${EXCL_MB}`,                redgifs: "anime thighjob hentai"           },
-  clothed:         { booru: `animated hentai clothed_sex rating:explicit ${EXCL}`,                moebooru: `clothed_sex rating:e ${EXCL_MB}`,              redgifs: "anime clothed sex hentai"        },
-  sleeping:        { booru: `animated hentai sleeping rating:explicit ${EXCL}`,                   moebooru: `sleeping rating:e ${EXCL_MB}`,                 redgifs: "anime sleeping sex hentai"       },
-  group:           { booru: `animated hentai group_sex rating:explicit ${EXCL}`,                  moebooru: `group_sex rating:e ${EXCL_MB}`,                redgifs: "anime group sex hentai"          },
-  orgy:            { booru: `animated hentai orgy rating:explicit ${EXCL}`,                       moebooru: `orgy rating:e ${EXCL_MB}`,                     redgifs: "anime orgy hentai"               },
+  blowjob:         { booru: `hentai blowjob rating:explicit ${EXCL}`,                    moebooru: `fellatio rating:e ${EXCL_MB}`,                 redgifs: "anime blowjob hentai"            },
+  anal:            { booru: `hentai anal rating:explicit ${EXCL}`,                       moebooru: `anal rating:e ${EXCL_MB}`,                     redgifs: "anime anal hentai"               },
+  paizuri:         { booru: `hentai paizuri rating:explicit ${EXCL}`,                    moebooru: `paizuri rating:e ${EXCL_MB}`,                  redgifs: "anime paizuri titfuck hentai"    },
+  cumshot:         { booru: `hentai cum rating:explicit ${EXCL}`,                        moebooru: `cum rating:e ${EXCL_MB}`,                      redgifs: "anime cumshot hentai"            },
+  riding:          { booru: `hentai cowgirl_position rating:explicit ${EXCL}`,           moebooru: `cowgirl_position rating:e ${EXCL_MB}`,         redgifs: "anime riding hentai"             },
+  doggystyle:      { booru: `hentai doggystyle rating:explicit ${EXCL}`,                 moebooru: `doggystyle rating:e ${EXCL_MB}`,               redgifs: "anime doggystyle hentai"         },
+  missionary:      { booru: `hentai missionary rating:explicit ${EXCL}`,                 moebooru: `missionary rating:e ${EXCL_MB}`,               redgifs: "anime missionary hentai"         },
+  handjob:         { booru: `hentai handjob rating:explicit ${EXCL}`,                    moebooru: `handjob rating:e ${EXCL_MB}`,                  redgifs: "anime handjob hentai"            },
+  footjob:         { booru: `hentai footjob rating:explicit ${EXCL}`,                    moebooru: `footjob rating:e ${EXCL_MB}`,                  redgifs: "anime footjob hentai"            },
+  threesome:       { booru: `hentai threesome rating:explicit ${EXCL}`,                  moebooru: `threesome rating:e ${EXCL_MB}`,                redgifs: "anime threesome hentai"          },
+  facial:          { booru: `hentai cum_on_face rating:explicit ${EXCL}`,                moebooru: `cum_on_face rating:e ${EXCL_MB}`,              redgifs: "anime facial hentai"             },
+  deepthroat:      { booru: `hentai deepthroat rating:explicit ${EXCL}`,                 moebooru: `deepthroat rating:e ${EXCL_MB}`,               redgifs: "anime deepthroat hentai"         },
+  squirt:          { booru: `hentai squirting rating:explicit ${EXCL}`,                  moebooru: `squirting rating:e ${EXCL_MB}`,                redgifs: "anime squirting hentai"          },
+  masturbation:    { booru: `hentai masturbation rating:explicit ${EXCL}`,               moebooru: `masturbation rating:e ${EXCL_MB}`,             redgifs: "anime masturbation hentai"       },
+  dildo:           { booru: `hentai dildo rating:explicit ${EXCL}`,                      moebooru: `dildo rating:e ${EXCL_MB}`,                    redgifs: "anime dildo hentai"              },
+  vibrator:        { booru: `hentai vibrator rating:explicit ${EXCL}`,                   moebooru: `vibrator rating:e ${EXCL_MB}`,                 redgifs: "anime vibrator hentai"           },
+  dp:              { booru: `hentai double_penetration rating:explicit ${EXCL}`,         moebooru: `double_penetration rating:e ${EXCL_MB}`,       redgifs: "anime double penetration hentai" },
+  public:          { booru: `hentai public_sex rating:explicit ${EXCL}`,                 moebooru: `sex_in_public rating:e ${EXCL_MB}`,            redgifs: "anime public sex hentai"         },
+  cunnilingus:     { booru: `hentai cunnilingus rating:explicit ${EXCL}`,                moebooru: `cunnilingus rating:e ${EXCL_MB}`,              redgifs: "anime cunnilingus hentai"        },
+  reverse_cowgirl: { booru: `hentai reverse_cowgirl_position rating:explicit ${EXCL}`,   moebooru: `reverse_cowgirl_position rating:e ${EXCL_MB}`, redgifs: "anime reverse cowgirl hentai"    },
+  standing:        { booru: `hentai standing_sex rating:explicit ${EXCL}`,               moebooru: `standing_sex rating:e ${EXCL_MB}`,             redgifs: "anime standing sex hentai"       },
+  spanking:        { booru: `hentai spanking rating:explicit ${EXCL}`,                   moebooru: `spanking rating:e ${EXCL_MB}`,                 redgifs: "anime spanking hentai"           },
+  fingering:       { booru: `hentai fingering rating:explicit ${EXCL}`,                  moebooru: `fingering rating:e ${EXCL_MB}`,                redgifs: "anime fingering hentai"          },
+  thighjob:        { booru: `hentai thigh_sex rating:explicit ${EXCL}`,                  moebooru: `thigh_sex rating:e ${EXCL_MB}`,                redgifs: "anime thighjob hentai"           },
+  clothed:         { booru: `hentai clothed_sex rating:explicit ${EXCL}`,                moebooru: `clothed_sex rating:e ${EXCL_MB}`,              redgifs: "anime clothed sex hentai"        },
+  sleeping:        { booru: `hentai sleeping rating:explicit ${EXCL}`,                   moebooru: `sleeping rating:e ${EXCL_MB}`,                 redgifs: "anime sleeping sex hentai"       },
+  group:           { booru: `hentai group_sex rating:explicit ${EXCL}`,                  moebooru: `group_sex rating:e ${EXCL_MB}`,                redgifs: "anime group sex hentai"          },
+  orgy:            { booru: `hentai orgy rating:explicit ${EXCL}`,                       moebooru: `orgy rating:e ${EXCL_MB}`,                     redgifs: "anime orgy hentai"               },
 
   // ── Character types ────────────────────────────────────────────────────────
-  nurse:           { booru: `animated hentai nurse rating:explicit ${EXCL}`,                      moebooru: `nurse rating:e ${EXCL_MB}`,                    redgifs: "anime nurse hentai"              },
-  teacher:         { booru: `animated hentai teacher rating:explicit ${EXCL}`,                    moebooru: `teacher rating:e ${EXCL_MB}`,                  redgifs: "anime teacher hentai"            },
-  ojou:            { booru: `animated hentai ojou-sama rating:explicit ${EXCL}`,                  moebooru: `ojou-sama rating:e ${EXCL_MB}`,                redgifs: "anime ojou hentai"               },
-  demon:           { booru: `animated hentai demon_girl rating:explicit ${EXCL}`,                 moebooru: `demon_girl rating:e ${EXCL_MB}`,               redgifs: "anime demon girl hentai"         },
-  angel:           { booru: `animated hentai angel rating:explicit ${EXCL}`,                      moebooru: `angel rating:e ${EXCL_MB}`,                    redgifs: "anime angel hentai"              },
-  vampire:         { booru: `animated hentai vampire rating:explicit ${EXCL}`,                    moebooru: `vampire rating:e ${EXCL_MB}`,                  redgifs: "anime vampire hentai"            },
-  witch:           { booru: `animated hentai witch rating:explicit ${EXCL}`,                      moebooru: `witch rating:e ${EXCL_MB}`,                    redgifs: "anime witch hentai"              },
-  miko:            { booru: `animated hentai miko rating:explicit ${EXCL}`,                       moebooru: `miko rating:e ${EXCL_MB}`,                     redgifs: "anime shrine maiden hentai"      },
-  bunny:           { booru: `animated hentai bunny_girl rating:explicit ${EXCL}`,                 moebooru: `bunny_girl rating:e ${EXCL_MB}`,               redgifs: "anime bunny girl hentai"         },
-  princess:        { booru: `animated hentai princess rating:explicit ${EXCL}`,                   moebooru: `princess rating:e ${EXCL_MB}`,                 redgifs: "anime princess hentai"           },
-  idol:            { booru: `animated hentai idol rating:explicit ${EXCL}`,                       moebooru: `idol rating:e ${EXCL_MB}`,                     redgifs: "anime idol hentai"               },
-  kunoichi:        { booru: `animated hentai kunoichi rating:explicit ${EXCL}`,                   moebooru: `kunoichi rating:e ${EXCL_MB}`,                 redgifs: "anime kunoichi ninja hentai"     },
-  pirate:          { booru: `animated hentai pirate rating:explicit ${EXCL}`,                     moebooru: `pirate rating:e ${EXCL_MB}`,                   redgifs: "anime pirate hentai"             },
-  cheerleader:     { booru: `animated hentai cheerleader rating:explicit ${EXCL}`,                moebooru: `cheerleader rating:e ${EXCL_MB}`,              redgifs: "anime cheerleader hentai"        },
-  police:          { booru: `animated hentai policewoman rating:explicit ${EXCL}`,                moebooru: `policewoman rating:e ${EXCL_MB}`,              redgifs: "anime police hentai"             },
-  military:        { booru: `animated hentai military_uniform rating:explicit ${EXCL}`,           moebooru: `military_uniform rating:e ${EXCL_MB}`,         redgifs: "anime military girl hentai"      },
-  tomboy:          { booru: `animated hentai tomboy rating:explicit ${EXCL}`,                     moebooru: `tomboy rating:e ${EXCL_MB}`,                   redgifs: "anime tomboy hentai"             },
-  gyaru:           { booru: `animated hentai gyaru rating:explicit ${EXCL}`,                      moebooru: `gyaru rating:e ${EXCL_MB}`,                    redgifs: "anime gyaru hentai"              },
-  foxgirl:         { booru: `animated hentai fox_girl rating:explicit ${EXCL}`,                   moebooru: `fox_girl rating:e ${EXCL_MB}`,                 redgifs: "anime fox girl hentai"           },
-  kemonomimi:      { booru: `animated hentai kemonomimi rating:explicit ${EXCL}`,                 moebooru: `kemonomimi rating:e ${EXCL_MB}`,               redgifs: "anime kemonomimi hentai"         },
-  warrior:         { booru: `animated hentai warrior rating:explicit ${EXCL}`,                    moebooru: `warrior rating:e ${EXCL_MB}`,                  redgifs: "anime warrior hentai"            },
-  knight:          { booru: `animated hentai knight rating:explicit ${EXCL}`,                     moebooru: `knight rating:e ${EXCL_MB}`,                   redgifs: "anime knight hentai"             },
-  twins:           { booru: `animated hentai twins rating:explicit ${EXCL}`,                      moebooru: `twins rating:e ${EXCL_MB}`,                    redgifs: "anime twins hentai"              },
-  yandere:         { booru: `animated hentai yandere rating:explicit ${EXCL}`,                    moebooru: `yandere rating:e ${EXCL_MB}`,                  redgifs: "anime yandere hentai"            },
-  harem:           { booru: `animated hentai harem rating:explicit ${EXCL}`,                      moebooru: `harem rating:e ${EXCL_MB}`,                    redgifs: "anime harem hentai"              },
+  nurse:           { booru: `hentai nurse rating:explicit ${EXCL}`,                      moebooru: `nurse rating:e ${EXCL_MB}`,                    redgifs: "anime nurse hentai"              },
+  teacher:         { booru: `hentai teacher rating:explicit ${EXCL}`,                    moebooru: `teacher rating:e ${EXCL_MB}`,                  redgifs: "anime teacher hentai"            },
+  ojou:            { booru: `hentai ojou-sama rating:explicit ${EXCL}`,                  moebooru: `ojou-sama rating:e ${EXCL_MB}`,                redgifs: "anime ojou hentai"               },
+  demon:           { booru: `hentai demon_girl rating:explicit ${EXCL}`,                 moebooru: `demon_girl rating:e ${EXCL_MB}`,               redgifs: "anime demon girl hentai"         },
+  angel:           { booru: `hentai angel rating:explicit ${EXCL}`,                      moebooru: `angel rating:e ${EXCL_MB}`,                    redgifs: "anime angel hentai"              },
+  vampire:         { booru: `hentai vampire rating:explicit ${EXCL}`,                    moebooru: `vampire rating:e ${EXCL_MB}`,                  redgifs: "anime vampire hentai"            },
+  witch:           { booru: `hentai witch rating:explicit ${EXCL}`,                      moebooru: `witch rating:e ${EXCL_MB}`,                    redgifs: "anime witch hentai"              },
+  miko:            { booru: `hentai miko rating:explicit ${EXCL}`,                       moebooru: `miko rating:e ${EXCL_MB}`,                     redgifs: "anime shrine maiden hentai"      },
+  bunny:           { booru: `hentai bunny_girl rating:explicit ${EXCL}`,                 moebooru: `bunny_girl rating:e ${EXCL_MB}`,               redgifs: "anime bunny girl hentai"         },
+  princess:        { booru: `hentai princess rating:explicit ${EXCL}`,                   moebooru: `princess rating:e ${EXCL_MB}`,                 redgifs: "anime princess hentai"           },
+  idol:            { booru: `hentai idol rating:explicit ${EXCL}`,                       moebooru: `idol rating:e ${EXCL_MB}`,                     redgifs: "anime idol hentai"               },
+  kunoichi:        { booru: `hentai kunoichi rating:explicit ${EXCL}`,                   moebooru: `kunoichi rating:e ${EXCL_MB}`,                 redgifs: "anime kunoichi ninja hentai"     },
+  pirate:          { booru: `hentai pirate rating:explicit ${EXCL}`,                     moebooru: `pirate rating:e ${EXCL_MB}`,                   redgifs: "anime pirate hentai"             },
+  cheerleader:     { booru: `hentai cheerleader rating:explicit ${EXCL}`,                moebooru: `cheerleader rating:e ${EXCL_MB}`,              redgifs: "anime cheerleader hentai"        },
+  police:          { booru: `hentai policewoman rating:explicit ${EXCL}`,                moebooru: `policewoman rating:e ${EXCL_MB}`,              redgifs: "anime police hentai"             },
+  military:        { booru: `hentai military_uniform rating:explicit ${EXCL}`,           moebooru: `military_uniform rating:e ${EXCL_MB}`,         redgifs: "anime military girl hentai"      },
+  tomboy:          { booru: `hentai tomboy rating:explicit ${EXCL}`,                     moebooru: `tomboy rating:e ${EXCL_MB}`,                   redgifs: "anime tomboy hentai"             },
+  gyaru:           { booru: `hentai gyaru rating:explicit ${EXCL}`,                      moebooru: `gyaru rating:e ${EXCL_MB}`,                    redgifs: "anime gyaru hentai"              },
+  foxgirl:         { booru: `hentai fox_girl rating:explicit ${EXCL}`,                   moebooru: `fox_girl rating:e ${EXCL_MB}`,                 redgifs: "anime fox girl hentai"           },
+  kemonomimi:      { booru: `hentai kemonomimi rating:explicit ${EXCL}`,                 moebooru: `kemonomimi rating:e ${EXCL_MB}`,               redgifs: "anime kemonomimi hentai"         },
+  warrior:         { booru: `hentai warrior rating:explicit ${EXCL}`,                    moebooru: `warrior rating:e ${EXCL_MB}`,                  redgifs: "anime warrior hentai"            },
+  knight:          { booru: `hentai knight rating:explicit ${EXCL}`,                     moebooru: `knight rating:e ${EXCL_MB}`,                   redgifs: "anime knight hentai"             },
+  twins:           { booru: `hentai twins rating:explicit ${EXCL}`,                      moebooru: `twins rating:e ${EXCL_MB}`,                    redgifs: "anime twins hentai"              },
+  yandere:         { booru: `hentai yandere rating:explicit ${EXCL}`,                    moebooru: `yandere rating:e ${EXCL_MB}`,                  redgifs: "anime yandere hentai"            },
+  harem:           { booru: `hentai harem rating:explicit ${EXCL}`,                      moebooru: `harem rating:e ${EXCL_MB}`,                    redgifs: "anime harem hentai"              },
 
   // ── Physical / clothing ────────────────────────────────────────────────────
-  stockings:       { booru: `animated hentai thighhighs rating:explicit ${EXCL}`,                 moebooru: `thighhighs rating:e ${EXCL_MB}`,               redgifs: "anime stockings thighhighs hentai" },
-  lingerie:        { booru: `animated hentai lingerie rating:explicit ${EXCL}`,                   moebooru: `lingerie rating:e ${EXCL_MB}`,                 redgifs: "anime lingerie hentai"           },
-  swimsuit:        { booru: `animated hentai swimsuit rating:explicit ${EXCL}`,                   moebooru: `swimsuit rating:e ${EXCL_MB}`,                 redgifs: "anime swimsuit hentai"           },
-  nude:            { booru: `animated hentai nude rating:explicit ${EXCL}`,                       moebooru: `nude rating:e ${EXCL_MB}`,                     redgifs: "anime nude hentai"               },
-  topless:         { booru: `animated hentai topless rating:explicit ${EXCL}`,                    moebooru: `topless rating:e ${EXCL_MB}`,                  redgifs: "anime topless hentai"            },
-  exhibitionism:   { booru: `animated hentai exhibitionism rating:explicit ${EXCL}`,              moebooru: `exhibitionism rating:e ${EXCL_MB}`,            redgifs: "anime exhibitionism hentai"      },
-  latex:           { booru: `animated hentai latex rating:explicit ${EXCL}`,                      moebooru: `latex rating:e ${EXCL_MB}`,                    redgifs: "anime latex hentai"              },
-  glasses:         { booru: `animated hentai glasses rating:explicit ${EXCL}`,                    moebooru: `glasses rating:e ${EXCL_MB}`,                  redgifs: "anime glasses hentai"            },
-  twintails:       { booru: `animated hentai twintails rating:explicit ${EXCL}`,                  moebooru: `twintails rating:e ${EXCL_MB}`,                redgifs: "anime twintails hentai"          },
-  ass:             { booru: `animated hentai ass rating:explicit ${EXCL}`,                        moebooru: `ass rating:e ${EXCL_MB}`,                      redgifs: "anime ass hentai"                },
-  bigboobs:        { booru: `animated hentai large_breasts rating:explicit ${EXCL}`,              moebooru: `large_breasts rating:e ${EXCL_MB}`,            redgifs: "anime big boobs hentai"          },
-  smallboobs:      { booru: `animated hentai small_breasts rating:explicit ${EXCL}`,              moebooru: `small_breasts rating:e ${EXCL_MB}`,            redgifs: "anime small breasts hentai"      },
-  thighs:          { booru: `animated hentai thick_thighs rating:explicit ${EXCL}`,               moebooru: `thick_thighs rating:e ${EXCL_MB}`,             redgifs: "anime thick thighs hentai"       },
-  bikini:          { booru: `animated hentai bikini rating:explicit ${EXCL}`,                     moebooru: `bikini rating:e ${EXCL_MB}`,                   redgifs: "anime bikini hentai"             },
-  apron:           { booru: `animated hentai naked_apron rating:explicit ${EXCL}`,                moebooru: `naked_apron rating:e ${EXCL_MB}`,              redgifs: "anime naked apron hentai"        },
-  bodysuit:        { booru: `animated hentai bodysuit rating:explicit ${EXCL}`,                   moebooru: `bodysuit rating:e ${EXCL_MB}`,                 redgifs: "anime bodysuit hentai"           },
-  pantyhose:       { booru: `animated hentai pantyhose rating:explicit ${EXCL}`,                  moebooru: `pantyhose rating:e ${EXCL_MB}`,                redgifs: "anime pantyhose hentai"          },
-  uniform:         { booru: `animated hentai uniform rating:explicit ${EXCL}`,                    moebooru: `uniform rating:e ${EXCL_MB}`,                  redgifs: "anime uniform hentai"            },
-  cosplay:         { booru: `animated hentai cosplay rating:explicit ${EXCL}`,                    moebooru: `cosplay rating:e ${EXCL_MB}`,                  redgifs: "anime cosplay hentai"            },
+  stockings:       { booru: `hentai thighhighs rating:explicit ${EXCL}`,                 moebooru: `thighhighs rating:e ${EXCL_MB}`,               redgifs: "anime stockings thighhighs hentai" },
+  lingerie:        { booru: `hentai lingerie rating:explicit ${EXCL}`,                   moebooru: `lingerie rating:e ${EXCL_MB}`,                 redgifs: "anime lingerie hentai"           },
+  swimsuit:        { booru: `hentai swimsuit rating:explicit ${EXCL}`,                   moebooru: `swimsuit rating:e ${EXCL_MB}`,                 redgifs: "anime swimsuit hentai"           },
+  nude:            { booru: `hentai nude rating:explicit ${EXCL}`,                       moebooru: `nude rating:e ${EXCL_MB}`,                     redgifs: "anime nude hentai"               },
+  topless:         { booru: `hentai topless rating:explicit ${EXCL}`,                    moebooru: `topless rating:e ${EXCL_MB}`,                  redgifs: "anime topless hentai"            },
+  exhibitionism:   { booru: `hentai exhibitionism rating:explicit ${EXCL}`,              moebooru: `exhibitionism rating:e ${EXCL_MB}`,            redgifs: "anime exhibitionism hentai"      },
+  latex:           { booru: `hentai latex rating:explicit ${EXCL}`,                      moebooru: `latex rating:e ${EXCL_MB}`,                    redgifs: "anime latex hentai"              },
+  glasses:         { booru: `hentai glasses rating:explicit ${EXCL}`,                    moebooru: `glasses rating:e ${EXCL_MB}`,                  redgifs: "anime glasses hentai"            },
+  twintails:       { booru: `hentai twintails rating:explicit ${EXCL}`,                  moebooru: `twintails rating:e ${EXCL_MB}`,                redgifs: "anime twintails hentai"          },
+  ass:             { booru: `hentai ass rating:explicit ${EXCL}`,                        moebooru: `ass rating:e ${EXCL_MB}`,                      redgifs: "anime ass hentai"                },
+  bigboobs:        { booru: `hentai large_breasts rating:explicit ${EXCL}`,              moebooru: `large_breasts rating:e ${EXCL_MB}`,            redgifs: "anime big boobs hentai"          },
+  smallboobs:      { booru: `hentai small_breasts rating:explicit ${EXCL}`,              moebooru: `small_breasts rating:e ${EXCL_MB}`,            redgifs: "anime small breasts hentai"      },
+  thighs:          { booru: `hentai thick_thighs rating:explicit ${EXCL}`,               moebooru: `thick_thighs rating:e ${EXCL_MB}`,             redgifs: "anime thick thighs hentai"       },
+  bikini:          { booru: `hentai bikini rating:explicit ${EXCL}`,                     moebooru: `bikini rating:e ${EXCL_MB}`,                   redgifs: "anime bikini hentai"             },
+  apron:           { booru: `hentai naked_apron rating:explicit ${EXCL}`,                moebooru: `naked_apron rating:e ${EXCL_MB}`,              redgifs: "anime naked apron hentai"        },
+  bodysuit:        { booru: `hentai bodysuit rating:explicit ${EXCL}`,                   moebooru: `bodysuit rating:e ${EXCL_MB}`,                 redgifs: "anime bodysuit hentai"           },
+  pantyhose:       { booru: `hentai pantyhose rating:explicit ${EXCL}`,                  moebooru: `pantyhose rating:e ${EXCL_MB}`,                redgifs: "anime pantyhose hentai"          },
+  uniform:         { booru: `hentai uniform rating:explicit ${EXCL}`,                    moebooru: `uniform rating:e ${EXCL_MB}`,                  redgifs: "anime uniform hentai"            },
+  cosplay:         { booru: `hentai cosplay rating:explicit ${EXCL}`,                    moebooru: `cosplay rating:e ${EXCL_MB}`,                  redgifs: "anime cosplay hentai"            },
 
   // ── Kink / scenario ────────────────────────────────────────────────────────
-  bondage:         { booru: `animated hentai bondage rating:explicit ${EXCL}`,                    moebooru: `bondage rating:e ${EXCL_MB}`,                  redgifs: "anime bondage hentai"            },
-  bdsm:            { booru: `animated hentai bdsm rating:explicit ${EXCL}`,                       moebooru: `bdsm rating:e ${EXCL_MB}`,                     redgifs: "anime bdsm hentai"               },
-  femdom:          { booru: `animated hentai femdom rating:explicit ${EXCL}`,                     moebooru: `femdom rating:e ${EXCL_MB}`,                   redgifs: "anime femdom hentai"             },
-  collar:          { booru: `animated hentai collar rating:explicit ${EXCL}`,                     moebooru: `collar rating:e ${EXCL_MB}`,                   redgifs: "anime collar hentai"             },
-  blindfold:       { booru: `animated hentai blindfold rating:explicit ${EXCL}`,                  moebooru: `blindfold rating:e ${EXCL_MB}`,                redgifs: "anime blindfold hentai"          },
-  pov:             { booru: `animated hentai pov rating:explicit ${EXCL}`,                        moebooru: `pov rating:e ${EXCL_MB}`,                      redgifs: "anime pov hentai"                },
-  xray:            { booru: `animated hentai x-ray rating:explicit ${EXCL}`,                      moebooru: `x-ray rating:e ${EXCL_MB}`,                    redgifs: "anime xray hentai"               },
-  uncensored:      { booru: `animated hentai uncensored rating:explicit ${EXCL}`,                 moebooru: `uncensored rating:e ${EXCL_MB}`,               redgifs: "anime uncensored hentai"         },
-  impregnation:    { booru: `animated hentai impregnation rating:explicit ${EXCL}`,               moebooru: `impregnation rating:e ${EXCL_MB}`,             redgifs: "anime impregnation hentai"       },
-  pregnant:        { booru: `animated hentai pregnant rating:explicit ${EXCL}`,                   moebooru: `pregnant rating:e ${EXCL_MB}`,                 redgifs: "anime pregnant hentai"           },
-  shibari:         { booru: `animated hentai shibari rating:explicit ${EXCL}`,                    moebooru: `shibari rating:e ${EXCL_MB}`,                  redgifs: "anime shibari rope hentai"       },
-  gloryhole:       { booru: `animated hentai glory_hole rating:explicit ${EXCL}`,                 moebooru: `glory_hole rating:e ${EXCL_MB}`,               redgifs: "anime glory hole hentai"         },
-  breeding:        { booru: `animated hentai breeding rating:explicit ${EXCL}`,                   moebooru: `breeding rating:e ${EXCL_MB}`,                 redgifs: "anime breeding hentai"           },
+  bondage:         { booru: `hentai bondage rating:explicit ${EXCL}`,                    moebooru: `bondage rating:e ${EXCL_MB}`,                  redgifs: "anime bondage hentai"            },
+  bdsm:            { booru: `hentai bdsm rating:explicit ${EXCL}`,                       moebooru: `bdsm rating:e ${EXCL_MB}`,                     redgifs: "anime bdsm hentai"               },
+  femdom:          { booru: `hentai femdom rating:explicit ${EXCL}`,                     moebooru: `femdom rating:e ${EXCL_MB}`,                   redgifs: "anime femdom hentai"             },
+  collar:          { booru: `hentai collar rating:explicit ${EXCL}`,                     moebooru: `collar rating:e ${EXCL_MB}`,                   redgifs: "anime collar hentai"             },
+  blindfold:       { booru: `hentai blindfold rating:explicit ${EXCL}`,                  moebooru: `blindfold rating:e ${EXCL_MB}`,                redgifs: "anime blindfold hentai"          },
+  pov:             { booru: `hentai pov rating:explicit ${EXCL}`,                        moebooru: `pov rating:e ${EXCL_MB}`,                      redgifs: "anime pov hentai"                },
+  xray:            { booru: `hentai x-ray rating:explicit ${EXCL}`,                      moebooru: `x-ray rating:e ${EXCL_MB}`,                    redgifs: "anime xray hentai"               },
+  uncensored:      { booru: `hentai uncensored rating:explicit ${EXCL}`,                 moebooru: `uncensored rating:e ${EXCL_MB}`,               redgifs: "anime uncensored hentai"         },
+  impregnation:    { booru: `hentai impregnation rating:explicit ${EXCL}`,               moebooru: `impregnation rating:e ${EXCL_MB}`,             redgifs: "anime impregnation hentai"       },
+  pregnant:        { booru: `hentai pregnant rating:explicit ${EXCL}`,                   moebooru: `pregnant rating:e ${EXCL_MB}`,                 redgifs: "anime pregnant hentai"           },
+  shibari:         { booru: `hentai shibari rating:explicit ${EXCL}`,                    moebooru: `shibari rating:e ${EXCL_MB}`,                  redgifs: "anime shibari rope hentai"       },
+  gloryhole:       { booru: `hentai glory_hole rating:explicit ${EXCL}`,                 moebooru: `glory_hole rating:e ${EXCL_MB}`,               redgifs: "anime glory hole hentai"         },
+  breeding:        { booru: `hentai breeding rating:explicit ${EXCL}`,                   moebooru: `breeding rating:e ${EXCL_MB}`,                 redgifs: "anime breeding hentai"           },
 
   // ── Settings ───────────────────────────────────────────────────────────────
-  outdoor:         { booru: `animated hentai outdoors rating:explicit ${EXCL}`,                   moebooru: `outdoors rating:e ${EXCL_MB}`,                 redgifs: "anime outdoor sex hentai"        },
-  beach:           { booru: `animated hentai beach rating:explicit ${EXCL}`,                      moebooru: `beach rating:e ${EXCL_MB}`,                    redgifs: "anime beach hentai"              },
-  classroom:       { booru: `animated hentai classroom rating:explicit ${EXCL}`,                  moebooru: `classroom rating:e ${EXCL_MB}`,                redgifs: "anime classroom hentai"          },
-  office:          { booru: `animated hentai office_sex rating:explicit ${EXCL}`,                 moebooru: `office_sex rating:e ${EXCL_MB}`,               redgifs: "anime office sex hentai"         },
-  bath:            { booru: `animated hentai bathing rating:explicit ${EXCL}`,                    moebooru: `bathing rating:e ${EXCL_MB}`,                  redgifs: "anime bath sex hentai"           },
+  outdoor:         { booru: `hentai outdoors rating:explicit ${EXCL}`,                   moebooru: `outdoors rating:e ${EXCL_MB}`,                 redgifs: "anime outdoor sex hentai"        },
+  beach:           { booru: `hentai beach rating:explicit ${EXCL}`,                      moebooru: `beach rating:e ${EXCL_MB}`,                    redgifs: "anime beach hentai"              },
+  classroom:       { booru: `hentai classroom rating:explicit ${EXCL}`,                  moebooru: `classroom rating:e ${EXCL_MB}`,                redgifs: "anime classroom hentai"          },
+  office:          { booru: `hentai office_sex rating:explicit ${EXCL}`,                 moebooru: `office_sex rating:e ${EXCL_MB}`,               redgifs: "anime office sex hentai"         },
+  bath:            { booru: `hentai bathing rating:explicit ${EXCL}`,                    moebooru: `bathing rating:e ${EXCL_MB}`,                  redgifs: "anime bath sex hentai"           },
 } as const;
 
 type Category = keyof typeof CATEGORIES;
@@ -375,30 +382,43 @@ function buildFns(
 
 async function fetchNsfwUrl(category: Category, wantVideo: boolean): Promise<NsfwResult | null> {
   const map = CATEGORIES[category];
-  const dbTag = danbooruTag(map.moebooru);
-  const fns = buildFns(map.booru, map.moebooru, dbTag, wantVideo);
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const result = await raceToFirst(fns);
-    if (!result) continue;
-    if (!seenSet.has(result.url)) { markSeen(result.url); return result; }
-  }
-  return null;
+  const fns = buildFns(map.booru, map.moebooru, danbooruTag(map.moebooru), wantVideo);
+  // selectUrl already prefers unseen URLs within each page; no outer seenSet loop needed.
+  // Try twice (different random pages each call) in case first race is all timeouts.
+  const result = await raceToFirst(fns) ?? await raceToFirst(fns);
+  if (result) markSeen(result.url);
+  return result;
 }
 
 // ── Freeform search — any term the user types ─────────────────────────────
 async function fetchFreeformUrl(term: string, wantVideo: boolean): Promise<NsfwResult | null> {
   const booruTerm = term.replace(/\s+/g, "_");
-  const booruTags = `${booruTerm} rating:explicit ${EXCL}`;
-  const mbTags    = `${booruTerm} rating:e ${EXCL_MB}`;
-  const dbTag     = `${booruTerm} rating:e`;
 
-  const fns = buildFns(booruTags, mbTags, dbTag, wantVideo);
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const result = await raceToFirst(fns);
-    if (!result) continue;
-    if (!seenSet.has(result.url)) { markSeen(result.url); return result; }
+  // Attempt 1: full term, light exclusions
+  const fns1 = buildFns(
+    `${booruTerm} rating:explicit ${EXCL_FREE}`,
+    `${booruTerm} rating:e ${EXCL_MB}`,
+    `${booruTerm} rating:e`,
+    wantVideo,
+  );
+  let result = await raceToFirst(fns1);
+  if (result) { markSeen(result.url); return result; }
+
+  // Attempt 2: first word only (broadens the search for multi-word terms)
+  const firstWord = booruTerm.split("_")[0];
+  if (firstWord && firstWord !== booruTerm) {
+    const fns2 = buildFns(
+      `${firstWord} rating:explicit ${EXCL_FREE}`,
+      `${firstWord} rating:e ${EXCL_MB}`,
+      `${firstWord} rating:e`,
+      wantVideo,
+    );
+    result = await raceToFirst(fns2);
+    if (result) { markSeen(result.url); return result; }
   }
-  return null;
+
+  // Attempt 3: silently fall back to a random category — user always gets content
+  return fetchNsfwUrl(pick(VALID_CATS.filter(c => c !== "random")), wantVideo);
 }
 
 // ── Per-guild NSFW toggle (stored in bot_kv) ──────────────────────────────
@@ -451,15 +471,15 @@ async function fetchAndDownload(
   fetcher: (video: boolean) => Promise<NsfwResult | null>,
   wantVideo = false,
 ): Promise<{ buffer: Buffer; ext: string; post: string } | null> {
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 4; attempt++) {
     const result = await fetcher(wantVideo);
-    if (!result) return null;
+    if (!result) continue; // sources returned nothing this round — try again with a new random page
     const buffer = await downloadImage(result.url);
     if (buffer) {
       const ext = result.url.split(".").pop()?.split("?")[0]?.toLowerCase() ?? (wantVideo ? "mp4" : "gif");
       return { buffer, ext, post: result.post };
     }
-    markSeen(result.url);
+    markSeen(result.url); // bad download — mark seen so next attempt picks a different URL
   }
   return null;
 }
@@ -683,18 +703,22 @@ export async function handleNsfwCommand(message: Message): Promise<void> {
     return;
   }
 
-  // ── Single image: download + re-upload, retry up to 3 different URLs ───────
-  for (let imgAttempt = 0; imgAttempt < 3; imgAttempt++) {
-    const result = await fetcher(false);
-    if (!result) break;
-    const buffer = await downloadImage(result.url);
-    if (buffer) {
-      const ext = result.url.split(".").pop()?.split("?")[0]?.toLowerCase() ?? "gif";
-      await message.reply({ files: [new AttachmentBuilder(buffer, { name: `nsfw.${ext}` })] });
-      return;
-    }
-    markSeen(result.url);
+  // ── Single image: download + re-upload ───────────────────────────────────
+  // fetchAndDownload retries 4× internally, then we fall back to a hard-coded
+  // random category so the user *always* gets content — never an error message.
+  let media = await fetchAndDownload(fetcher, false);
+
+  if (!media) {
+    // Fetcher (freeform or specific category) exhausted — silently use a random category
+    const fallbackCat = pick(VALID_CATS.filter(c => c !== "random"));
+    media = await fetchAndDownload((v) => fetchNsfwUrl(fallbackCat, v), false);
   }
 
-  await message.reply("❌ Couldn't fetch right now. Try again in a moment.");
+  if (media) {
+    await message.reply({ files: [new AttachmentBuilder(media.buffer, { name: `nsfw.${media.ext}` })] });
+    return;
+  }
+
+  // True last resort: all sources are down (extremely rare — Railway network issue)
+  await message.reply("⏳ Sources are slow right now — try again in a few seconds.");
 }
