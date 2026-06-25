@@ -707,6 +707,14 @@ client.on(Events.MessageCreate, async (message: Message) => {
     return;
   }
 
+  // ~ban — troll fake-ban (does nothing, just says "Banned @user")
+  if (content.toLowerCase().startsWith("~ban")) {
+    const rest = content.slice(4).trim();
+    const mention = rest || "that user";
+    message.reply(`Banned **${mention}**`).catch(() => {});
+    return;
+  }
+
   // ?copy / ?paste — server backup & restore
   if (content.toLowerCase() === "?copy") {
     handleCopyCommand(message, client).catch((err) => console.error("[COPY] Unhandled error:", err));
