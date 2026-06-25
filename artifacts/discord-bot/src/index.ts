@@ -24,6 +24,7 @@ import { handleCopyCommand, handlePasteCommand, handleCopyEmojisCommand, handleP
 import { handleNsfwCommand } from "./commands/nsfw.js";
 import { handleCaptionCommand } from "./commands/caption.js";
 import { handleModuleCommand, runCustomModules } from "./commands/moduleManager.js";
+import { spyModCommand, handleModlogCommand } from "./modlog/modSpy.js";
 import { handleCreateTicket } from "./tickets/ticketFlow.js";
 import { handleCloseTicket, handleDeleteTicket } from "./tickets/ticketControls.js";
 import {
@@ -663,6 +664,9 @@ client.on(Events.ShardResume, (shardId, replayed) => {
 client.on(Events.MessageCreate, async (message: Message) => {
   if (message.author.bot) return;
 
+  // Mod command spy — log ?ban/?kick/etc. by real mods before Carl Bot acts
+  spyModCommand(message).catch(() => {});
+
   // Live moderation — runs before prefix commands
   handleModerationMessage(message, client).catch((err) =>
     console.error("[MODERATION] Unhandled error:", err)
@@ -794,6 +798,12 @@ client.on(Events.MessageCreate, async (message: Message) => {
   // ?m — custom module manager (admin only)
   if (content.toLowerCase().startsWith("?m ") || content.toLowerCase() === "?m") {
     handleModuleCommand(message).catch((err) => console.error("[MODULE] Unhandled error:", err));
+    return;
+  }
+
+  // ?modlog — mod command spy configuration (admin only)
+  if (content.toLowerCase().startsWith("?modlog")) {
+    handleModlogCommand(message).catch((err) => console.error("[MODLOG] Unhandled error:", err));
     return;
   }
 
