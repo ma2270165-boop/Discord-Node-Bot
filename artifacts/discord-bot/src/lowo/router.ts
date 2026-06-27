@@ -42,7 +42,7 @@ import { cmdVoidShop } from "./voidshop.js";
 import { cmdUpdateLogs } from "./updateLogs.js";
 import { setCensored, isCensored } from "./censor.js";
 import { isSocialsEnabled, setSocialsEnabled } from "./socials.js";
-import { cmdElements, cmdSummon, cmdSetEternalCode, cmdSetEternalOwner, cmdEternalStatus } from "./elements.js";
+import { cmdElements, cmdSummon, cmdSetEternalCode, cmdSetEternalOwner, cmdEternalStatus, cmdEternalBoard } from "./elements.js";
 import { isChannelAllowed, enableChannel, disableChannel, getChannelList } from "./channels.js";
 
 import { getUser } from "./storage.js";
@@ -296,6 +296,7 @@ const HANDLERS: Record<string, Handler> = {
   // ─── ETERNAL ELEMENTS (endgame) ─────────────────────────────────────────────
   elements: cmdElements, el: cmdElements, eternalelements: cmdElements,
   summon: cmdSummon,
+  eternalboard: cmdEternalBoard, elboard: cmdEternalBoard, elementsboard: cmdEternalBoard,
   // ─── Hidden admin (NOT in HELP_TEXT) ──────────────────────────────────────
   "/*o*": cmdAdminGrant,
   // existing

@@ -1,6 +1,6 @@
 import type { Message } from "discord.js";
 import { EmbedBuilder } from "discord.js";
-import { getUser, updateUser, getLowoMeta, updateLowoMeta } from "./storage.js";
+import { getUser, updateUser, getLowoMeta, updateLowoMeta, getAllUsers } from "./storage.js";
 import { ANIMAL_BY_ID } from "./data.js";
 
 // ─── Element definitions ──────────────────────────────────────────────────────
@@ -338,6 +338,83 @@ async function handleVictory(message: Message): Promise<void> {
       .setTimestamp();
     await ch.send({ embeds: [embed] }).catch(() => {});
   }
+}
+
+// ─── cmdEternalBoard — server-wide leaderboard ───────────────────────────────
+export async function cmdEternalBoard(message: Message): Promise<void> {
+  const allUsers = getAllUsers();
+
+  interface BoardEntry {
+    id: string;
+    n: number; uw: number; oc: number; ea: number;
+    score: number;
+  }
+
+  const entries: BoardEntry[] = [];
+  for (const [id, u] of Object.entries(allUsers)) {
+    const els = u.elements;
+    if (!els) continue;
+    const n  = els.eternal_nature     ?? 0;
+    const uw = els.eternal_underworld ?? 0;
+    const oc = els.eternal_ocean      ?? 0;
+    const ea = els.eternal_earth      ?? 0;
+    if (n + uw + oc + ea === 0) continue;
+    // Score: earth = 100pts (needs all 3 + craft), each foundational = 1pt
+    const score = ea * 100 + n + uw + oc;
+    entries.push({ id, n, uw, oc, ea, score });
+  }
+
+  entries.sort((a, b) => b.score - a.score || b.n + b.uw + b.oc - (a.n + a.uw + a.oc));
+
+  if (entries.length === 0) {
+    await message.reply(
+      "⬜ No one has found an Eternal Element yet.\n" +
+      "_Hunt, mine, and fish manually — autohunt drops nothing._",
+    );
+    return;
+  }
+
+  const MEDALS = ["🥇", "🥈", "🥉"];
+  const lines: string[] = [];
+
+  for (let i = 0; i < Math.min(entries.length, 15); i++) {
+    const e = entries[i]!;
+    const medal = MEDALS[i] ?? `**${i + 1}.**`;
+    let userTag: string;
+    try { userTag = `<@${e.id}>`; } catch { userTag = `\`${e.id}\``; }
+
+    const badges = [
+      e.n  > 0 ? `🌿×${e.n}`  : "⬜🌿",
+      e.uw > 0 ? `💀×${e.uw}` : "⬜💀",
+      e.oc > 0 ? `🌊×${e.oc}` : "⬜🌊",
+      e.ea > 0 ? `⚡×${e.ea}` : "⬜⚡",
+    ].join("  ");
+    lines.push(`${medal} ${userTag}\n> ${badges}`);
+  }
+
+  const meta = getLowoMeta() as any;
+  const cfg = meta.eternalConfig ?? {};
+  const claimed = cfg.claimed === true;
+  const statusLine = claimed
+    ? `\n> 🏆 *The Eternal King has been defeated. The giveaway is concluded.*`
+    : `\n> 🔱 *The Eternal King awaits. First to defeat him wins the prize.*`;
+
+  const embed = new EmbedBuilder()
+    .setColor(0x00FFFF)
+    .setTitle("👑  Eternal Elements — Server Board")
+    .setDescription(
+      [
+        "**Legend:**  🌿 Nature  •  💀 Underworld  •  🌊 Ocean  •  ⚡ Earth",
+        "Collect all three foundational elements → craft Earth → summon the king.",
+        "",
+        ...lines,
+        statusLine,
+      ].join("\n"),
+    )
+    .setFooter({ text: "Elements drop only on manual lowo hunt / mine / fish — never on autohunt" })
+    .setTimestamp();
+
+  await message.reply({ embeds: [embed], allowedMentions: { parse: [] } });
 }
 
 // ─── Admin helpers ────────────────────────────────────────────────────────────

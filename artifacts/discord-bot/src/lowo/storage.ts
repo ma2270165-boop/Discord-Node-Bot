@@ -276,6 +276,10 @@ function save(): void {
   }, 500);
 }
 
+export function getAllUsers(): Record<string, UserData> {
+  return load().users;
+}
+
 export function getUser(id: string): UserData {
   const s = load();
   if (!s.users[id]) {
