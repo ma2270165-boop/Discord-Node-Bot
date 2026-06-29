@@ -23,22 +23,20 @@ COPY lib/api-zod/package.json ./lib/api-zod/
 COPY lib/db/package.json ./lib/db/
 COPY scripts/package.json ./scripts/
 
+# Install all deps (including devDeps for esbuild) before setting NODE_ENV.
+RUN pnpm install --no-frozen-lockfile --filter "@workspace/discord-bot..."
+
+# Copy source after install so package.json changes don't bust the install cache.
 COPY lib/db ./lib/db
 COPY artifacts/discord-bot ./artifacts/discord-bot
 
-# Install all workspace deps (including @workspace/db) so pnpm deploy can bundle them.
-# NODE_ENV is intentionally unset here so devDependencies are available during install.
-RUN pnpm install --no-frozen-lockfile --filter "@workspace/discord-bot..."
-
-# `pnpm deploy` produces a self-contained directory where every workspace
-# dependency (@workspace/db etc.) is COPIED as a real folder — no symlinks.
-# This permanently eliminates the tsx symlink/TypeScript-source-lookup bug that
-# caused ERR_MODULE_NOT_FOUND on @workspace/db/src/schema/index.ts.
-RUN pnpm deploy --filter @workspace/discord-bot /deploy
+# Build: esbuild bundles src/index.ts and inlines @workspace/db so the final
+# dist/index.mjs has zero workspace symlink dependencies at runtime.
+# tsx is never invoked at runtime — no more ERR_MODULE_NOT_FOUND.
+RUN pnpm --filter @workspace/discord-bot run build
 
 ENV NODE_ENV=production
-WORKDIR /deploy
 
 EXPOSE 3000
 
-CMD ["node_modules/.bin/tsx", "src/index.ts"]
+CMD ["pnpm", "--filter", "@workspace/discord-bot", "run", "start"]

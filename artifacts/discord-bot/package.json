@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/index.ts",
-    "start": "tsx src/index.ts",
+    "build": "node build.mjs",
+    "start": "node dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx/esm --test src/__tests__/*.test.ts"
   },
@@ -23,6 +24,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/sharp": "^0.32.0",
+    "esbuild": "catalog:",
     "typescript": "~5.9.2"
   }
 }

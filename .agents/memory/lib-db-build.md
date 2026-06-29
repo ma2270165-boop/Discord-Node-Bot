@@ -1,15 +1,23 @@
 ---
-name: lib-db must export compiled JS for Docker
-description: Workspace package lib/db must be pre-built to dist/ with esbuild; exporting .ts source files causes ERR_MODULE_NOT_FOUND in Railway/Docker deployments.
+name: lib-db must export compiled JS for Docker / Discord-bot must be pre-compiled
+description: tsx's symlink source-lookup causes ERR_MODULE_NOT_FOUND in Railway deployments. Fix: compile discord-bot to JS with esbuild at Docker build time, never run tsx at runtime.
 ---
 
 ## Rule
-`lib/db/package.json` exports must point to `./dist/*.js`, never to `./src/*.ts`.
+Never run `tsx src/index.ts` as the production start command for `@workspace/discord-bot` in Docker/Railway.
+tsx's `resolveTsPaths` follows pnpm workspace symlinks and tries to load `@workspace/db/src/schema/index.ts` at the SYMLINK path (not realpath), which fails in all Node.js 22 ESM resolution paths.
 
-**Why:** pnpm's workspace symlink for `link:` packages in Docker (Railway) points to the actual lib/db directory. tsx's `oxc-resolver` cannot stat `.ts` files through pnpm's workspace symlink resolution chain — it fails with `ERR_MODULE_NOT_FOUND` at `finalizeResolution` even when the source files physically exist. Patches (cp -r, absolute symlinks, .dockerignore fixes) all failed because the root cause is tsx trying to load `.ts` through a symlink, not file absence.
+**Why:** Every approach to "fix the symlink" (cp -rL, pnpm deploy, etc.) failed because Railway overrides the Dockerfile CMD with its own start command (`pnpm --filter @workspace/discord-bot run start` from `/app`). The symlink problem is structural — tsx always does a TypeScript source lookup via the symlink path.
+
+**The Definitive Fix (implemented):**
+- `artifacts/discord-bot/build.mjs` uses esbuild to compile `src/index.ts` → `dist/index.mjs`
+- `@workspace/db` is NOT in esbuild's `external` list — it gets bundled inline (esbuild follows symlinks correctly at build time, reads `lib/db/dist/schema/index.js`)
+- `"start"` script changed to `"node dist/index.mjs"` — no tsx at runtime
+- Dockerfile runs `pnpm --filter @workspace/discord-bot run build` before starting
+- `.dockerignore` has `!lib/db/dist` so `lib/db/dist/schema/index.js` is available to esbuild during Docker build
 
 **How to apply:**
-- `lib/db` has a `build` script: `esbuild src/index.ts ... && esbuild src/schema/index.ts ...`
-- The Dockerfile installs deps (without NODE_ENV=production so devDeps/esbuild are available), runs `pnpm --filter "@workspace/db" run build`, then sets NODE_ENV=production.
-- Never revert exports back to `./src/*.ts`.
-- If new entrypoints are added to lib/db/src, add a corresponding esbuild call to the build script and a new exports entry pointing to dist/.
+- Always compile the bot to JS in the Dockerfile before starting it
+- If adding new workspace packages as deps, do NOT add them to esbuild `external` — let them be bundled inline
+- Native packages (sharp, @napi-rs/canvas, *.node) must stay in `external`
+- `lib/db/dist` must be committed to git AND excluded from .dockerignore (both are already set up)
