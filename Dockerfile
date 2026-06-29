@@ -24,10 +24,11 @@ COPY lib/api-zod/package.json ./lib/api-zod/
 COPY lib/db/package.json ./lib/db/
 COPY scripts/package.json ./scripts/
 
+COPY lib/db ./lib/db
+
 RUN pnpm install --no-frozen-lockfile --filter "@workspace/discord-bot..."
 
 COPY artifacts/discord-bot ./artifacts/discord-bot
-COPY lib/db ./lib/db
 
 EXPOSE 3000
 
