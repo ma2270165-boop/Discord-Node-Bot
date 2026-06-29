@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { build as esbuild } from "esbuild";
-import { rm } from "node:fs/promises";
+import { rm, cp, mkdir } from "node:fs/promises";
 
 globalThis.require = createRequire(import.meta.url);
 
@@ -72,6 +72,17 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
 `,
     },
   });
+
+  const src = (rel) => path.resolve(artifactDir, "src", rel);
+  const dst = (rel) => path.resolve(distDir, rel);
+
+  await mkdir(dst("pages"), { recursive: true });
+  await Promise.all([
+    cp(src("leaderboard/shimmer.gif"), dst("shimmer.gif")),
+    cp(src("rules/banner.gif"),        dst("banner.gif")),
+    cp(src("bot/pages/terms.html"),    dst("pages/terms.html")),
+    cp(src("bot/pages/privacy.html"),  dst("pages/privacy.html")),
+  ]);
 }
 
 buildAll().catch((err) => {

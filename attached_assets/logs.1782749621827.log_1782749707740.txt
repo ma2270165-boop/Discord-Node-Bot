@@ -1,0 +1,276 @@
+2026-06-29T16:11:39.969755479Z [inf]  Starting Container
+2026-06-29T16:11:40.829345097Z [inf]  
+2026-06-29T16:11:40.829349276Z [inf]  > @workspace/discord-bot@0.0.0 start /app/artifacts/discord-bot
+2026-06-29T16:11:40.829352406Z [inf]  > node dist/index.mjs
+2026-06-29T16:11:40.829355236Z [inf]  
+2026-06-29T16:11:40.829358196Z [err]  node:fs:560
+2026-06-29T16:11:40.829361016Z [err]    return binding.open(
+2026-06-29T16:11:40.829363646Z [err]                   ^
+2026-06-29T16:11:40.829376296Z [err]  
+2026-06-29T16:11:40.829379646Z [err]  Error: ENOENT: no such file or directory, open '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:40.829382996Z [err]      at Object.openSync (node:fs:560:18)
+2026-06-29T16:11:40.829386156Z [err]      at readFileSync (node:fs:444:35)
+2026-06-29T16:11:40.829389826Z [err]      at file:///app/artifacts/discord-bot/dist/index.mjs:101297:19
+2026-06-29T16:11:40.829393306Z [err]      at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-06-29T16:11:40.829396286Z [err]      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+2026-06-29T16:11:40.829399666Z [err]      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+2026-06-29T16:11:40.829402796Z [err]    errno: -2,
+2026-06-29T16:11:40.829405636Z [err]    code: 'ENOENT',
+2026-06-29T16:11:40.829408536Z [err]    syscall: 'open',
+2026-06-29T16:11:40.829411646Z [err]    path: '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:40.829414536Z [err]  }
+2026-06-29T16:11:40.829417466Z [err]  
+2026-06-29T16:11:40.829420396Z [err]  Node.js v22.23.1
+2026-06-29T16:11:40.829423105Z [inf]  /app/artifacts/discord-bot:
+2026-06-29T16:11:40.829425905Z [inf]   ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/discord-bot@0.0.0 start: `node dist/index.mjs`
+2026-06-29T16:11:40.829428805Z [inf]  Exit status 1
+2026-06-29T16:11:41.424518271Z [inf]  
+2026-06-29T16:11:41.424527731Z [inf]  > @workspace/discord-bot@0.0.0 start /app/artifacts/discord-bot
+2026-06-29T16:11:41.424531161Z [inf]  > node dist/index.mjs
+2026-06-29T16:11:41.424534491Z [inf]  
+2026-06-29T16:11:41.755893806Z [err]  node:fs:560
+2026-06-29T16:11:41.755897246Z [err]    return binding.open(
+2026-06-29T16:11:41.755900556Z [err]                   ^
+2026-06-29T16:11:41.755904876Z [err]  
+2026-06-29T16:11:41.755908496Z [err]  Error: ENOENT: no such file or directory, open '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:41.755912786Z [err]      at Object.openSync (node:fs:560:18)
+2026-06-29T16:11:41.755915876Z [err]      at readFileSync (node:fs:444:35)
+2026-06-29T16:11:41.755919546Z [err]      at file:///app/artifacts/discord-bot/dist/index.mjs:101297:19
+2026-06-29T16:11:41.755922996Z [err]      at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-06-29T16:11:41.755926686Z [err]      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+2026-06-29T16:11:41.755930216Z [err]      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+2026-06-29T16:11:41.755934146Z [err]    errno: -2,
+2026-06-29T16:11:41.755937726Z [err]    code: 'ENOENT',
+2026-06-29T16:11:41.755941476Z [err]    syscall: 'open',
+2026-06-29T16:11:41.755944896Z [err]    path: '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:41.755948516Z [err]  }
+2026-06-29T16:11:41.755951495Z [err]  
+2026-06-29T16:11:41.755955645Z [err]  Node.js v22.23.1
+2026-06-29T16:11:41.755958595Z [inf]  /app/artifacts/discord-bot:
+2026-06-29T16:11:41.755961635Z [inf]   ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/discord-bot@0.0.0 start: `node dist/index.mjs`
+2026-06-29T16:11:41.755964565Z [inf]  Exit status 1
+2026-06-29T16:11:42.720952042Z [inf]  
+2026-06-29T16:11:42.720955102Z [inf]  > @workspace/discord-bot@0.0.0 start /app/artifacts/discord-bot
+2026-06-29T16:11:42.720957912Z [inf]  > node dist/index.mjs
+2026-06-29T16:11:42.720960562Z [inf]  
+2026-06-29T16:11:42.880899490Z [err]  node:fs:560
+2026-06-29T16:11:42.880902010Z [err]      at readFileSync (node:fs:444:35)
+2026-06-29T16:11:42.880909190Z [err]    return binding.open(
+2026-06-29T16:11:42.880916260Z [err]                   ^
+2026-06-29T16:11:42.880917989Z [err]      at file:///app/artifacts/discord-bot/dist/index.mjs:101297:19
+2026-06-29T16:11:42.880924509Z [err]  
+2026-06-29T16:11:42.880926999Z [err]      at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-06-29T16:11:42.880936109Z [err]      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+2026-06-29T16:11:42.880940739Z [err]      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+2026-06-29T16:11:42.880941399Z [err]  Error: ENOENT: no such file or directory, open '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:42.880946709Z [err]      at Object.openSync (node:fs:560:18)
+2026-06-29T16:11:42.880949599Z [err]    errno: -2,
+2026-06-29T16:11:42.880954449Z [err]    code: 'ENOENT',
+2026-06-29T16:11:42.880957789Z [err]    syscall: 'open',
+2026-06-29T16:11:42.880961179Z [err]    path: '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:42.880964659Z [err]  }
+2026-06-29T16:11:42.880968459Z [err]  
+2026-06-29T16:11:42.880972199Z [err]  Node.js v22.23.1
+2026-06-29T16:11:42.897259599Z [inf]  /app/artifacts/discord-bot:
+2026-06-29T16:11:42.897264448Z [inf]   ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/discord-bot@0.0.0 start: `node dist/index.mjs`
+2026-06-29T16:11:42.897267388Z [inf]  Exit status 1
+2026-06-29T16:11:43.892920291Z [inf]  
+2026-06-29T16:11:43.892929421Z [inf]  > @workspace/discord-bot@0.0.0 start /app/artifacts/discord-bot
+2026-06-29T16:11:43.892934271Z [inf]  > node dist/index.mjs
+2026-06-29T16:11:43.892939301Z [inf]  
+2026-06-29T16:11:44.127602333Z [err]  node:fs:560
+2026-06-29T16:11:44.127605513Z [err]    return binding.open(
+2026-06-29T16:11:44.127609063Z [err]                   ^
+2026-06-29T16:11:44.127613283Z [err]  
+2026-06-29T16:11:44.127618183Z [err]  Error: ENOENT: no such file or directory, open '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:44.127621863Z [err]      at Object.openSync (node:fs:560:18)
+2026-06-29T16:11:44.127625043Z [err]      at readFileSync (node:fs:444:35)
+2026-06-29T16:11:44.127628943Z [err]      at file:///app/artifacts/discord-bot/dist/index.mjs:101297:19
+2026-06-29T16:11:44.127632413Z [err]      at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-06-29T16:11:44.127964147Z [err]      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+2026-06-29T16:11:44.127972867Z [err]      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+2026-06-29T16:11:44.127976957Z [err]    errno: -2,
+2026-06-29T16:11:44.127980397Z [err]    code: 'ENOENT',
+2026-06-29T16:11:44.127984097Z [err]    syscall: 'open',
+2026-06-29T16:11:44.127987717Z [err]    path: '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:44.128001477Z [err]  }
+2026-06-29T16:11:44.128004487Z [err]  
+2026-06-29T16:11:44.128008497Z [err]  Node.js v22.23.1
+2026-06-29T16:11:44.147950155Z [inf]  /app/artifacts/discord-bot:
+2026-06-29T16:11:44.147953755Z [inf]   ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/discord-bot@0.0.0 start: `node dist/index.mjs`
+2026-06-29T16:11:44.147956705Z [inf]  Exit status 1
+2026-06-29T16:11:45.134975689Z [inf]  
+2026-06-29T16:11:45.134981209Z [inf]  > @workspace/discord-bot@0.0.0 start /app/artifacts/discord-bot
+2026-06-29T16:11:45.134985939Z [inf]  > node dist/index.mjs
+2026-06-29T16:11:45.134989529Z [inf]  
+2026-06-29T16:11:45.375811514Z [err]  node:fs:560
+2026-06-29T16:11:45.375818494Z [err]    return binding.open(
+2026-06-29T16:11:45.375822694Z [err]                   ^
+2026-06-29T16:11:45.375826994Z [err]  
+2026-06-29T16:11:45.375845514Z [err]  Error: ENOENT: no such file or directory, open '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:45.375850194Z [err]      at Object.openSync (node:fs:560:18)
+2026-06-29T16:11:45.375854364Z [err]      at readFileSync (node:fs:444:35)
+2026-06-29T16:11:45.375858513Z [err]      at file:///app/artifacts/discord-bot/dist/index.mjs:101297:19
+2026-06-29T16:11:45.375862733Z [err]      at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-06-29T16:11:45.375868483Z [err]      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+2026-06-29T16:11:45.375874373Z [err]      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+2026-06-29T16:11:45.375878803Z [err]    errno: -2,
+2026-06-29T16:11:45.375883053Z [err]    code: 'ENOENT',
+2026-06-29T16:11:45.375887673Z [err]    syscall: 'open',
+2026-06-29T16:11:45.375891943Z [err]    path: '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:45.375896313Z [err]  }
+2026-06-29T16:11:45.375900893Z [err]  
+2026-06-29T16:11:45.375905393Z [err]  Node.js v22.23.1
+2026-06-29T16:11:45.400246019Z [inf]  /app/artifacts/discord-bot:
+2026-06-29T16:11:45.400251169Z [inf]   ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/discord-bot@0.0.0 start: `node dist/index.mjs`
+2026-06-29T16:11:45.400255489Z [inf]  Exit status 1
+2026-06-29T16:11:46.785552002Z [inf]  
+2026-06-29T16:11:46.785556252Z [inf]  > @workspace/discord-bot@0.0.0 start /app/artifacts/discord-bot
+2026-06-29T16:11:46.785560342Z [inf]  > node dist/index.mjs
+2026-06-29T16:11:46.785564202Z [inf]  
+2026-06-29T16:11:47.038368308Z [err]  node:fs:560
+2026-06-29T16:11:47.038375428Z [err]    return binding.open(
+2026-06-29T16:11:47.038379228Z [err]                   ^
+2026-06-29T16:11:47.038383108Z [err]  
+2026-06-29T16:11:47.038386958Z [err]  Error: ENOENT: no such file or directory, open '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:47.038392388Z [err]      at Object.openSync (node:fs:560:18)
+2026-06-29T16:11:47.038397138Z [err]      at readFileSync (node:fs:444:35)
+2026-06-29T16:11:47.038400778Z [err]      at file:///app/artifacts/discord-bot/dist/index.mjs:101297:19
+2026-06-29T16:11:47.038404668Z [err]      at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-06-29T16:11:47.038408237Z [err]      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+2026-06-29T16:11:47.038412117Z [err]      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+2026-06-29T16:11:47.038416067Z [err]    errno: -2,
+2026-06-29T16:11:47.038420037Z [err]    code: 'ENOENT',
+2026-06-29T16:11:47.038423897Z [err]    syscall: 'open',
+2026-06-29T16:11:47.038427807Z [err]    path: '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:47.038431847Z [err]  }
+2026-06-29T16:11:47.038435667Z [err]  
+2026-06-29T16:11:47.038439757Z [err]  Node.js v22.23.1
+2026-06-29T16:11:47.065773520Z [inf]  /app/artifacts/discord-bot:
+2026-06-29T16:11:47.065777560Z [inf]   ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/discord-bot@0.0.0 start: `node dist/index.mjs`
+2026-06-29T16:11:47.065780250Z [inf]  Exit status 1
+2026-06-29T16:11:48.160536262Z [inf]  
+2026-06-29T16:11:48.160548902Z [inf]  > @workspace/discord-bot@0.0.0 start /app/artifacts/discord-bot
+2026-06-29T16:11:48.160554062Z [inf]  > node dist/index.mjs
+2026-06-29T16:11:48.160559352Z [inf]  
+2026-06-29T16:11:48.387117148Z [err]  node:fs:560
+2026-06-29T16:11:48.387120968Z [err]    return binding.open(
+2026-06-29T16:11:48.387124838Z [err]                   ^
+2026-06-29T16:11:48.387128568Z [err]  
+2026-06-29T16:11:48.387131638Z [err]  Error: ENOENT: no such file or directory, open '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:48.387135248Z [err]      at Object.openSync (node:fs:560:18)
+2026-06-29T16:11:48.387140318Z [err]      at readFileSync (node:fs:444:35)
+2026-06-29T16:11:48.387143728Z [err]      at file:///app/artifacts/discord-bot/dist/index.mjs:101297:19
+2026-06-29T16:11:48.387147528Z [err]      at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-06-29T16:11:48.387151248Z [err]      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+2026-06-29T16:11:48.387154728Z [err]      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+2026-06-29T16:11:48.387158598Z [err]    errno: -2,
+2026-06-29T16:11:48.387161848Z [err]    code: 'ENOENT',
+2026-06-29T16:11:48.387165328Z [err]    syscall: 'open',
+2026-06-29T16:11:48.387168728Z [err]    path: '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:48.387172298Z [err]  }
+2026-06-29T16:11:48.387175708Z [err]  
+2026-06-29T16:11:48.387179388Z [err]  Node.js v22.23.1
+2026-06-29T16:11:48.407792546Z [inf]  /app/artifacts/discord-bot:
+2026-06-29T16:11:48.407795166Z [inf]   ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/discord-bot@0.0.0 start: `node dist/index.mjs`
+2026-06-29T16:11:48.407797906Z [inf]  Exit status 1
+2026-06-29T16:11:49.399186880Z [inf]  
+2026-06-29T16:11:49.399190790Z [inf]  > @workspace/discord-bot@0.0.0 start /app/artifacts/discord-bot
+2026-06-29T16:11:49.399193850Z [inf]  > node dist/index.mjs
+2026-06-29T16:11:49.399196840Z [inf]  
+2026-06-29T16:11:49.727278760Z [err]  node:fs:560
+2026-06-29T16:11:49.727282030Z [err]    return binding.open(
+2026-06-29T16:11:49.727285710Z [err]                   ^
+2026-06-29T16:11:49.727289590Z [err]  
+2026-06-29T16:11:49.727292840Z [err]  Error: ENOENT: no such file or directory, open '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:49.727295880Z [err]      at Object.openSync (node:fs:560:18)
+2026-06-29T16:11:49.727298940Z [err]      at readFileSync (node:fs:444:35)
+2026-06-29T16:11:49.727301700Z [err]      at file:///app/artifacts/discord-bot/dist/index.mjs:101297:19
+2026-06-29T16:11:49.727305740Z [err]      at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-06-29T16:11:49.727309790Z [err]      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+2026-06-29T16:11:49.727313580Z [err]      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+2026-06-29T16:11:49.727317500Z [err]    errno: -2,
+2026-06-29T16:11:49.727321510Z [err]    code: 'ENOENT',
+2026-06-29T16:11:49.727325140Z [err]    syscall: 'open',
+2026-06-29T16:11:49.727328770Z [err]    path: '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:49.727332140Z [err]  }
+2026-06-29T16:11:49.727335879Z [err]  
+2026-06-29T16:11:49.727339909Z [err]  Node.js v22.23.1
+2026-06-29T16:11:49.727344229Z [inf]  /app/artifacts/discord-bot:
+2026-06-29T16:11:49.727347879Z [inf]   ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/discord-bot@0.0.0 start: `node dist/index.mjs`
+2026-06-29T16:11:49.727351609Z [inf]  Exit status 1
+2026-06-29T16:11:50.745974638Z [inf]  
+2026-06-29T16:11:50.745978998Z [inf]  > @workspace/discord-bot@0.0.0 start /app/artifacts/discord-bot
+2026-06-29T16:11:50.745985408Z [inf]  > node dist/index.mjs
+2026-06-29T16:11:50.745990168Z [inf]  
+2026-06-29T16:11:50.983003217Z [err]  node:fs:560
+2026-06-29T16:11:50.983011707Z [err]    return binding.open(
+2026-06-29T16:11:50.983018687Z [err]                   ^
+2026-06-29T16:11:50.983022207Z [err]      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+2026-06-29T16:11:50.983024317Z [err]  
+2026-06-29T16:11:50.983029076Z [err]  Error: ENOENT: no such file or directory, open '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:50.983033536Z [err]    errno: -2,
+2026-06-29T16:11:50.983038706Z [err]    code: 'ENOENT',
+2026-06-29T16:11:50.983046826Z [err]    syscall: 'open',
+2026-06-29T16:11:50.983047106Z [err]      at Object.openSync (node:fs:560:18)
+2026-06-29T16:11:50.983057176Z [err]    path: '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:50.983057256Z [err]      at readFileSync (node:fs:444:35)
+2026-06-29T16:11:50.983065066Z [err]      at file:///app/artifacts/discord-bot/dist/index.mjs:101297:19
+2026-06-29T16:11:50.983067476Z [err]  }
+2026-06-29T16:11:50.983071256Z [err]      at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-06-29T16:11:50.983077206Z [err]      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+2026-06-29T16:11:50.983077996Z [err]  
+2026-06-29T16:11:50.983083246Z [err]  Node.js v22.23.1
+2026-06-29T16:11:51.004730870Z [inf]  /app/artifacts/discord-bot:
+2026-06-29T16:11:51.004735600Z [inf]   ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/discord-bot@0.0.0 start: `node dist/index.mjs`
+2026-06-29T16:11:51.004740150Z [inf]  Exit status 1
+2026-06-29T16:11:51.990726480Z [inf]  
+2026-06-29T16:11:51.990730550Z [inf]  > @workspace/discord-bot@0.0.0 start /app/artifacts/discord-bot
+2026-06-29T16:11:51.990733630Z [inf]  > node dist/index.mjs
+2026-06-29T16:11:51.990736140Z [inf]  
+2026-06-29T16:11:52.218526829Z [err]  node:fs:560
+2026-06-29T16:11:52.218530389Z [err]    return binding.open(
+2026-06-29T16:11:52.218535289Z [err]                   ^
+2026-06-29T16:11:52.218538679Z [err]  
+2026-06-29T16:11:52.218541779Z [err]  Error: ENOENT: no such file or directory, open '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:52.218545229Z [err]      at Object.openSync (node:fs:560:18)
+2026-06-29T16:11:52.218548879Z [err]      at readFileSync (node:fs:444:35)
+2026-06-29T16:11:52.218551709Z [err]      at file:///app/artifacts/discord-bot/dist/index.mjs:101297:19
+2026-06-29T16:11:52.218554639Z [err]      at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-06-29T16:11:52.218557569Z [err]      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+2026-06-29T16:11:52.218560448Z [err]      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+2026-06-29T16:11:52.218563158Z [err]    errno: -2,
+2026-06-29T16:11:52.218565998Z [err]    code: 'ENOENT',
+2026-06-29T16:11:52.218568848Z [err]    syscall: 'open',
+2026-06-29T16:11:52.218571878Z [err]    path: '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:52.218575908Z [err]  }
+2026-06-29T16:11:52.218580748Z [err]  
+2026-06-29T16:11:52.218583448Z [err]  Node.js v22.23.1
+2026-06-29T16:11:52.236995118Z [inf]  /app/artifacts/discord-bot:
+2026-06-29T16:11:52.236998208Z [inf]   ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/discord-bot@0.0.0 start: `node dist/index.mjs`
+2026-06-29T16:11:52.237000928Z [inf]  Exit status 1
+2026-06-29T16:11:53.184164127Z [inf]  
+2026-06-29T16:11:53.184168917Z [inf]  > @workspace/discord-bot@0.0.0 start /app/artifacts/discord-bot
+2026-06-29T16:11:53.184172947Z [inf]  > node dist/index.mjs
+2026-06-29T16:11:53.184177347Z [inf]  
+2026-06-29T16:11:53.416713269Z [err]    code: 'ENOENT',
+2026-06-29T16:11:53.416720189Z [err]    syscall: 'open',
+2026-06-29T16:11:53.416727719Z [err]  node:fs:560
+2026-06-29T16:11:53.416728339Z [err]    path: '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:53.416735268Z [err]    return binding.open(
+2026-06-29T16:11:53.416737198Z [err]  }
+2026-06-29T16:11:53.416741748Z [err]                   ^
+2026-06-29T16:11:53.416744848Z [err]  
+2026-06-29T16:11:53.416748478Z [err]  
+2026-06-29T16:11:53.416751978Z [err]  Node.js v22.23.1
+2026-06-29T16:11:53.416755478Z [err]  Error: ENOENT: no such file or directory, open '/app/artifacts/discord-bot/dist/shimmer.gif'
+2026-06-29T16:11:53.416760538Z [err]      at Object.openSync (node:fs:560:18)
+2026-06-29T16:11:53.416763428Z [err]      at readFileSync (node:fs:444:35)
+2026-06-29T16:11:53.416766598Z [err]      at file:///app/artifacts/discord-bot/dist/index.mjs:101297:19
+2026-06-29T16:11:53.416770008Z [err]      at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-06-29T16:11:53.416773118Z [err]      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+2026-06-29T16:11:53.416776208Z [err]      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+2026-06-29T16:11:53.416779018Z [err]    errno: -2,
+2026-06-29T16:11:53.432586324Z [inf]  /app/artifacts/discord-bot:
+2026-06-29T16:11:53.432591074Z [inf]   ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/discord-bot@0.0.0 start: `node dist/index.mjs`
+2026-06-29T16:11:53.432595514Z [inf]  Exit status 1
