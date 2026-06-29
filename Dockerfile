@@ -27,6 +27,7 @@ COPY scripts/package.json ./scripts/
 RUN pnpm install --no-frozen-lockfile --filter "@workspace/discord-bot..."
 
 COPY artifacts/discord-bot ./artifacts/discord-bot
+COPY lib/db ./lib/db
 
 EXPOSE 3000
 
