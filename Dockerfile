@@ -28,15 +28,14 @@ COPY lib/db ./lib/db
 
 RUN pnpm install --no-frozen-lockfile --filter "@workspace/discord-bot..."
 
-# pnpm creates a relative symlink for the workspace package that can resolve
-# incorrectly in Docker. Replace with an absolute symlink in every place Node
-# will look so resolution is unambiguous.
-RUN mkdir -p /app/artifacts/discord-bot/node_modules/@workspace \
- && rm -rf /app/artifacts/discord-bot/node_modules/@workspace/db \
- && ln -sf /app/lib/db /app/artifacts/discord-bot/node_modules/@workspace/db \
- && mkdir -p /app/node_modules/@workspace \
+# Remove pnpm's workspace symlink for @workspace/db and replace with a real
+# copy of the source so tsx can find .ts files without following symlinks.
+RUN rm -rf /app/artifacts/discord-bot/node_modules/@workspace/db \
+ && mkdir -p /app/artifacts/discord-bot/node_modules/@workspace \
+ && cp -r /app/lib/db /app/artifacts/discord-bot/node_modules/@workspace/db \
  && rm -rf /app/node_modules/@workspace/db \
- && ln -sf /app/lib/db /app/node_modules/@workspace/db
+ && mkdir -p /app/node_modules/@workspace \
+ && cp -r /app/lib/db /app/node_modules/@workspace/db
 
 COPY artifacts/discord-bot ./artifacts/discord-bot
 
