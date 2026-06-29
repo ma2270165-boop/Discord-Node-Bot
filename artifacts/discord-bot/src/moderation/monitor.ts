@@ -61,7 +61,7 @@ export async function handleModerationMessage(
   client: Client
 ): Promise<void> {
   if (!message.guild || message.author.bot) return;
-  if (!isCensorEnabled(message.guild.id)) return;
+  if (!(await isCensorEnabled(message.guild.id))) return;
 
   const guildId = message.guild.id;
   const member  = message.member as GuildMember | null;
