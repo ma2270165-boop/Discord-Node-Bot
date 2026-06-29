@@ -24,7 +24,7 @@ COPY lib/db/package.json ./lib/db/
 COPY scripts/package.json ./scripts/
 
 # Install all deps (including devDeps for esbuild) before setting NODE_ENV.
-RUN pnpm install --no-frozen-lockfile --filter "@workspace/discord-bot..."
+RUN pnpm install --frozen-lockfile --filter "@workspace/discord-bot..."
 
 # Copy source after install so package.json changes don't bust the install cache.
 COPY lib/db ./lib/db
