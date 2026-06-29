@@ -56,9 +56,10 @@ export const cmdBase64Decode: Handler = async (msg, args) => {
 export const cmdAvatar: Handler = async (msg) => {
   const target = msg.mentions.users.first() ?? msg.author;
   const av = target.displayAvatarURL({ size: 4096 });
+  const color = await getEmbedColor(msg.author.id);
   await msg.reply({
     embeds: [new EmbedBuilder()
-      .setColor(getEmbedColor(msg.author.id))
+      .setColor(color)
       .setTitle(`${target.username}'s Avatar`)
       .setImage(av)
       .addFields({
@@ -84,9 +85,10 @@ export const cmdBanner: Handler = async (msg) => {
       await msg.reply({ embeds: [err(`**${target.username}** has no banner set.`)] });
       return;
     }
+    const bannerColor = await getEmbedColor(msg.author.id);
     await msg.reply({
       embeds: [new EmbedBuilder()
-        .setColor(getEmbedColor(msg.author.id))
+        .setColor(bannerColor)
         .setTitle(`${target.username}'s Banner`)
         .setImage(bannerUrl)
         .setFooter({ text: "mewo • utility" })
@@ -128,8 +130,9 @@ export const cmdDiscordUser: Handler = async (msg, args) => {
   const fetched = await msg.client.users.fetch(target.id, { force: true }).catch(() => target);
   const created = Math.floor(fetched.createdTimestamp / 1000);
   const bannerUrl = fetched.bannerURL({ size: 2048 });
+  const userColor = await getEmbedColor(msg.author.id);
   const embed = new EmbedBuilder()
-    .setColor(getEmbedColor(msg.author.id))
+    .setColor(userColor)
     .setTitle(`Discord User — ${fetched.username}`)
     .setThumbnail(fetched.displayAvatarURL({ size: 256 }))
     .addFields(
@@ -155,7 +158,7 @@ export const cmdTimezoneSet: Handler = async (msg, args) => {
     await msg.reply({ embeds: [err(`Invalid timezone \`${tz}\`. Use IANA format like \`America/New_York\` or \`Europe/London\`.`)] });
     return;
   }
-  setTimezone(msg.author.id, tz);
+  await setTimezone(msg.author.id, tz);
   const now = new Date().toLocaleString("en-US", { timeZone: tz, dateStyle: "full", timeStyle: "short" });
   await msg.reply({
     embeds: [new EmbedBuilder()
@@ -175,13 +178,13 @@ export const cmdTimezoneView: Handler = async (msg, args) => {
   let tz: string;
   let label: string;
   if (target) {
-    tz = getTimezone(target.id);
+    tz = await getTimezone(target.id);
     label = `${target.username}'s Timezone`;
   } else if (args[0]) {
     tz = args[0];
     label = `Timezone — ${tz}`;
   } else {
-    tz = getTimezone(msg.author.id);
+    tz = await getTimezone(msg.author.id);
     label = "Your Timezone";
   }
   try {
@@ -474,8 +477,9 @@ export const cmdMe: Handler = async (msg) => {
   const member = msg.guild?.members.cache.get(target.id);
   const created = Math.floor(target.createdTimestamp / 1000);
   const joined = member?.joinedTimestamp ? Math.floor(member.joinedTimestamp / 1000) : null;
+  const meColor = await getEmbedColor(msg.author.id);
   const embed = new EmbedBuilder()
-    .setColor(getEmbedColor(msg.author.id))
+    .setColor(meColor)
     .setTitle(`Info — ${target.username}`)
     .setThumbnail(target.displayAvatarURL({ size: 256 }))
     .addFields(
@@ -533,10 +537,11 @@ export const cmdInvite: Handler = async (msg) => {
 export const cmdCustomizeColor: Handler = async (msg, args) => {
   const hex = args[0]?.replace("#", "");
   if (!hex) {
-    const current = getEmbedColor(msg.author.id).toString(16).padStart(6, "0");
+    const currentColor = await getEmbedColor(msg.author.id);
+    const current = currentColor.toString(16).padStart(6, "0");
     await msg.reply({
       embeds: [new EmbedBuilder()
-        .setColor(getEmbedColor(msg.author.id))
+        .setColor(currentColor)
         .setTitle("Your Embed Color")
         .setDescription(
           `Current color: \`#${current.toUpperCase()}\`\n\n` +
@@ -552,7 +557,7 @@ export const cmdCustomizeColor: Handler = async (msg, args) => {
     await msg.reply({ embeds: [err("Invalid hex color. Use 6 hex characters, e.g. `5865F2` or `#FF0080`.")] });
     return;
   }
-  setEmbedColor(msg.author.id, hex);
+  await setEmbedColor(msg.author.id, hex);
   const parsed = parseInt(hex, 16);
   await msg.reply({
     embeds: [new EmbedBuilder()

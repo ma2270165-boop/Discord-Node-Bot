@@ -1,10 +1,6 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = resolve(__dirname, "../../../data");
-const FILE = resolve(DATA_DIR, "raids.json");
+import { eq, sql } from "drizzle-orm";
+import { getDb } from "../db.js";
+import { raidResultsTable, botSequencesTable } from "@workspace/db/schema";
 
 export interface RaidResult {
   id: string;
@@ -20,46 +16,32 @@ export interface RaidResult {
   raidNumber: number;
 }
 
-interface RaidsData {
-  results: RaidResult[];
-  counter: number;
+export async function nextRaidNumber(): Promise<number> {
+  const db = getDb();
+  const rows = await db
+    .insert(botSequencesTable)
+    .values({ name: "raids", value: 1 })
+    .onConflictDoUpdate({
+      target: botSequencesTable.name,
+      set: { value: sql`${botSequencesTable.value} + 1` },
+    })
+    .returning({ value: botSequencesTable.value });
+  return rows[0]?.value ?? 1;
 }
 
-function load(): RaidsData {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  if (!existsSync(FILE)) {
-    writeFileSync(FILE, JSON.stringify({ results: [], counter: 0 }, null, 2));
-    return { results: [], counter: 0 };
-  }
-  try {
-    const parsed = JSON.parse(readFileSync(FILE, "utf-8")) as Partial<RaidsData>;
-    return {
-      results: parsed.results ?? [],
-      counter: parsed.counter ?? 0,
-    };
-  } catch {
-    return { results: [], counter: 0 };
-  }
+export async function saveRaidResult(result: RaidResult): Promise<void> {
+  const db = getDb();
+  await db.insert(raidResultsTable).values(result).onConflictDoUpdate({
+    target: raidResultsTable.id,
+    set: { ...result },
+  });
 }
 
-function save(data: RaidsData): void {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(FILE, JSON.stringify(data, null, 2));
-}
-
-export function nextRaidNumber(): number {
-  const data = load();
-  data.counter += 1;
-  save(data);
-  return data.counter;
-}
-
-export function saveRaidResult(result: RaidResult): void {
-  const data = load();
-  data.results.push(result);
-  save(data);
-}
-
-export function getRaidResults(guildId: string): RaidResult[] {
-  return load().results.filter((r) => r.guildId === guildId);
+export async function getRaidResults(guildId: string): Promise<RaidResult[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(raidResultsTable)
+    .where(eq(raidResultsTable.guildId, guildId));
+  return rows;
 }

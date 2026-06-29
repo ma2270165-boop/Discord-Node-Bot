@@ -1,10 +1,6 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = resolve(__dirname, "../../../../data");
-const FILE = resolve(DATA_DIR, "censor.json");
+import { and, eq, sql } from "drizzle-orm";
+import { getDb } from "../db.js";
+import { censorGuildConfigTable, censorUserFlagsTable } from "@workspace/db/schema";
 
 export interface GuildCensorConfig {
   enabled: boolean;
@@ -12,88 +8,93 @@ export interface GuildCensorConfig {
 }
 
 export interface UserFlagRecord {
-  count: number;           // total flags (resets after timeout served)
-  lastFlag: string;        // ISO timestamp
-  totalLifetime: number;   // never resets — lifetime stat
+  count: number;
+  lastFlag: string;
+  totalLifetime: number;
 }
 
-interface CensorData {
-  guilds: Record<string, GuildCensorConfig>;
-  flags: Record<string, UserFlagRecord>; // key = "guildId:userId"
-}
+// ── In-memory cache for guild config (read on every message) ────────────────
+const configCache = new Map<string, GuildCensorConfig>();
 
-function load(): CensorData {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  if (!existsSync(FILE)) {
-    const empty: CensorData = { guilds: {}, flags: {} };
-    writeFileSync(FILE, JSON.stringify(empty, null, 2));
-    return empty;
-  }
+export async function getCensorConfig(guildId: string): Promise<GuildCensorConfig> {
+  if (configCache.has(guildId)) return configCache.get(guildId)!;
   try {
-    return JSON.parse(readFileSync(FILE, "utf-8")) as CensorData;
-  } catch {
-    return { guilds: {}, flags: {} };
-  }
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(censorGuildConfigTable)
+      .where(eq(censorGuildConfigTable.guildId, guildId))
+      .limit(1);
+    const cfg: GuildCensorConfig = rows[0]
+      ? { enabled: rows[0].enabled, modLogChannelId: rows[0].modLogChannelId ?? null }
+      : { enabled: false, modLogChannelId: null };
+    configCache.set(guildId, cfg);
+    return cfg;
+  } catch { return { enabled: false, modLogChannelId: null }; }
 }
 
-function save(data: CensorData): void {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(FILE, JSON.stringify(data, null, 2));
+export async function setCensorConfig(guildId: string, patch: Partial<GuildCensorConfig>): Promise<void> {
+  const current = await getCensorConfig(guildId);
+  const updated = { ...current, ...patch };
+  configCache.set(guildId, updated);
+  const db = getDb();
+  await db
+    .insert(censorGuildConfigTable)
+    .values({ guildId, ...updated })
+    .onConflictDoUpdate({
+      target: censorGuildConfigTable.guildId,
+      set: { enabled: updated.enabled, modLogChannelId: updated.modLogChannelId },
+    });
 }
 
-// ── Guild config ──────────────────────────────────────────────────────────────
-
-export function getCensorConfig(guildId: string): GuildCensorConfig {
-  const data = load();
-  return data.guilds[guildId] ?? { enabled: false, modLogChannelId: null };
-}
-
-export function setCensorConfig(guildId: string, patch: Partial<GuildCensorConfig>): void {
-  const data = load();
-  data.guilds[guildId] = { ...getCensorConfig(guildId), ...patch };
-  save(data);
-}
-
-export function isCensorEnabled(guildId: string): boolean {
-  return getCensorConfig(guildId).enabled;
+export async function isCensorEnabled(guildId: string): Promise<boolean> {
+  return (await getCensorConfig(guildId)).enabled;
 }
 
 // ── User flags ────────────────────────────────────────────────────────────────
 
-function flagKey(guildId: string, userId: string): string {
-  return `${guildId}:${userId}`;
+export async function getUserFlags(guildId: string, userId: string): Promise<UserFlagRecord> {
+  try {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(censorUserFlagsTable)
+      .where(and(
+        eq(censorUserFlagsTable.guildId, guildId),
+        eq(censorUserFlagsTable.userId, userId),
+      ))
+      .limit(1);
+    return rows[0]
+      ? { count: rows[0].count, lastFlag: rows[0].lastFlag, totalLifetime: rows[0].totalLifetime }
+      : { count: 0, lastFlag: new Date().toISOString(), totalLifetime: 0 };
+  } catch { return { count: 0, lastFlag: new Date().toISOString(), totalLifetime: 0 }; }
 }
 
-export function getUserFlags(guildId: string, userId: string): UserFlagRecord {
-  const data = load();
-  return (
-    data.flags[flagKey(guildId, userId)] ?? {
-      count: 0,
-      lastFlag: new Date().toISOString(),
-      totalLifetime: 0,
-    }
-  );
+export async function incrementFlag(guildId: string, userId: string): Promise<number> {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const rows = await db
+    .insert(censorUserFlagsTable)
+    .values({ guildId, userId, count: 1, lastFlag: now, totalLifetime: 1 })
+    .onConflictDoUpdate({
+      target: [censorUserFlagsTable.guildId, censorUserFlagsTable.userId],
+      set: {
+        count:         sql`${censorUserFlagsTable.count} + 1`,
+        totalLifetime: sql`${censorUserFlagsTable.totalLifetime} + 1`,
+        lastFlag:      now,
+      },
+    })
+    .returning({ count: censorUserFlagsTable.count });
+  return rows[0]?.count ?? 1;
 }
 
-/** Increment flag count and return the NEW count. */
-export function incrementFlag(guildId: string, userId: string): number {
-  const data = load();
-  const key = flagKey(guildId, userId);
-  const existing = data.flags[key] ?? { count: 0, lastFlag: "", totalLifetime: 0 };
-  existing.count += 1;
-  existing.totalLifetime += 1;
-  existing.lastFlag = new Date().toISOString();
-  data.flags[key] = existing;
-  save(data);
-  return existing.count;
-}
-
-/** Reset active flag count (e.g. after timeout served). Lifetime stays. */
-export function resetFlags(guildId: string, userId: string): void {
-  const data = load();
-  const key = flagKey(guildId, userId);
-  if (data.flags[key]) {
-    data.flags[key].count = 0;
-  }
-  save(data);
+export async function resetFlags(guildId: string, userId: string): Promise<void> {
+  const db = getDb();
+  await db
+    .update(censorUserFlagsTable)
+    .set({ count: 0 })
+    .where(and(
+      eq(censorUserFlagsTable.guildId, guildId),
+      eq(censorUserFlagsTable.userId, userId),
+    ));
 }

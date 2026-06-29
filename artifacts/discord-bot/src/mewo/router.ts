@@ -215,7 +215,7 @@ export async function handleMewoCommand(message: Message): Promise<boolean> {
   const args = parts.slice(1);
 
   // ── Channel gating ───────────────────────────────────────────────────────────
-  const enabledChannels = getEnabledChannels();
+  const enabledChannels = await getEnabledChannels();
   if (enabledChannels.length > 0 && !enabledChannels.includes(message.channelId)) {
     return true;
   }
@@ -228,7 +228,7 @@ export async function handleMewoCommand(message: Message): Promise<boolean> {
   if (cmd === "enable") {
     if (!message.guildId) { await message.reply({ embeds: [new EmbedBuilder().setColor(0xED4245).setDescription("❌ Server-only.")] }); return true; }
     if (!message.member?.permissions.has(PermissionFlagsBits.Administrator)) { await message.reply({ embeds: [new EmbedBuilder().setColor(0xED4245).setDescription("❌ You need Administrator permission.")] }); return true; }
-    enableChannel(message.channelId);
+    await enableChannel(message.channelId);
     await message.reply({
       embeds: [new EmbedBuilder()
         .setColor(0x57F287)
@@ -243,8 +243,8 @@ export async function handleMewoCommand(message: Message): Promise<boolean> {
   if (cmd === "disable") {
     if (!message.guildId) { await message.reply({ embeds: [new EmbedBuilder().setColor(0xED4245).setDescription("❌ Server-only.")] }); return true; }
     if (!message.member?.permissions.has(PermissionFlagsBits.Administrator)) { await message.reply({ embeds: [new EmbedBuilder().setColor(0xED4245).setDescription("❌ You need Administrator permission.")] }); return true; }
-    disableChannel(message.channelId);
-    const remaining = getEnabledChannels();
+    await disableChannel(message.channelId);
+    const remaining = await getEnabledChannels();
     await message.reply({
       embeds: [new EmbedBuilder()
         .setColor(0x5865F2)

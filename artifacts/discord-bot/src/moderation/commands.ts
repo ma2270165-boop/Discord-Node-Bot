@@ -26,7 +26,7 @@ export const censorData = new SlashCommandBuilder()
 
 export async function executeCensor(interaction: ChatInputCommandInteraction): Promise<void> {
   const guildId = interaction.guildId!;
-  const current = getCensorConfig(guildId);
+  const current = await getCensorConfig(guildId);
 
   const logChannel =
     (interaction.options.getChannel("modlog_channel") as TextChannel | null) ??
@@ -34,7 +34,7 @@ export async function executeCensor(interaction: ChatInputCommandInteraction): P
 
   const logChannelId = logChannel?.id ?? current.modLogChannelId ?? null;
 
-  setCensorConfig(guildId, { enabled: true, modLogChannelId: logChannelId });
+  await setCensorConfig(guildId, { enabled: true, modLogChannelId: logChannelId });
 
   const embed = new EmbedBuilder()
     .setColor(0x2ecc71)

@@ -94,7 +94,7 @@ export async function executeSetupRules(interaction: ChatInputCommandInteraction
 
   const attachment = new AttachmentBuilder(BANNER_GIF, { name: "banner.gif" });
 
-  const existing = getRulesMessage(interaction.guildId!);
+  const existing = await getRulesMessage(interaction.guildId!);
 
   if (existing && existing.channelId === channel.id) {
     try {
@@ -118,7 +118,7 @@ export async function executeSetupRules(interaction: ChatInputCommandInteraction
   }
 
   const msg = await channel.send({ embeds: [embed], files: [attachment] });
-  setRulesMessage({
+  await setRulesMessage({
     guildId: interaction.guildId!,
     channelId: channel.id,
     messageId: msg.id,

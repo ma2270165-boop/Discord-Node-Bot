@@ -117,7 +117,7 @@ export async function executeAddPlayer(
   const position = interaction.options.getInteger("position", true);
   const stageRank = interaction.options.getString("stage_rank", true) as StageRank;
 
-  if (playerExistsAtPosition(position)) {
+  if (await playerExistsAtPosition(position)) {
     await interaction.editReply({
       embeds: [
         new EmbedBuilder()

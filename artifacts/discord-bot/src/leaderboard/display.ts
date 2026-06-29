@@ -4,7 +4,6 @@ import {
   Client,
   TextChannel,
   PermissionFlagsBits,
-  MessageFlags,
   AttachmentBuilder,
 } from "discord.js";
 import { readFileSync } from "fs";
@@ -58,12 +57,12 @@ function makeShimmerAttachment(): AttachmentBuilder {
   return new AttachmentBuilder(SHIMMER_GIF, { name: "shimmer.gif" });
 }
 
-export function buildPermanentPayload(): {
+export async function buildPermanentPayload(): Promise<{
   content: string;
   embeds: EmbedBuilder[];
   files: AttachmentBuilder[];
-} {
-  const allPlayers = getPlayers();
+}> {
+  const allPlayers = await getPlayers();
   const displayPlayers = allPlayers.slice(0, MAX_CARDS);
   const extra = allPlayers.length - displayPlayers.length;
 
@@ -87,7 +86,7 @@ export function buildPermanentPayload(): {
 }
 
 export async function refreshPinnedLeaderboard(client: Client): Promise<void> {
-  const pinned = getPinnedMessage();
+  const pinned = await getPinnedMessage();
   if (!pinned) return;
 
   try {
@@ -104,7 +103,7 @@ export async function refreshPinnedLeaderboard(client: Client): Promise<void> {
       .catch(() => null);
     if (!message) return;
 
-    const payload = buildPermanentPayload();
+    const payload = await buildPermanentPayload();
     await message.edit({
       content: payload.content,
       embeds: payload.embeds,
@@ -134,7 +133,7 @@ export async function executeSetupLeaderboard(
     return;
   }
 
-  const existing = getPinnedMessage();
+  const existing = await getPinnedMessage();
   if (existing && existing.channelId === channel.id) {
     const old = await channel.messages
       .fetch(existing.messageId)
@@ -150,7 +149,7 @@ export async function executeSetupLeaderboard(
   }
 
   try {
-    const payload = buildPermanentPayload();
+    const payload = await buildPermanentPayload();
     const msg = await channel.send({
       content: payload.content,
       embeds: payload.embeds,
@@ -164,7 +163,7 @@ export async function executeSetupLeaderboard(
       channelId: channel.id,
       messageId: msg.id,
     };
-    setPinnedMessage(pinned);
+    await setPinnedMessage(pinned);
 
     await interaction.editReply({
       content: `✅ Leaderboard deployed: ${msg.url}\n\nIt will auto-update whenever you add, edit, or remove players.`,

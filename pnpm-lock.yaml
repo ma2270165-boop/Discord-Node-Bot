@@ -221,9 +221,15 @@ importers:
       '@types/pg':
         specifier: ^8.18.0
         version: 8.18.0
+      '@workspace/db':
+        specifier: workspace:*
+        version: link:../../lib/db
       discord.js:
         specifier: ^14.19.3
         version: 14.26.2
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.1(@types/pg@8.18.0)(pg@8.20.0)
       mathjs:
         specifier: ^15.2.0
         version: 15.2.0

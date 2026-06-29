@@ -123,7 +123,7 @@ export async function executeWarn(interaction: ChatInputCommandInteraction): Pro
     guildId: interaction.guildId ?? "",
   });
 
-  const history = getWarns(target.id, interaction.guildId ?? "");
+  const history = await getWarns(target.id, interaction.guildId ?? "");
   const warnCount = history.length;
 
   // Fetch member for timeout + DM
@@ -211,7 +211,7 @@ export const clearwarnsData = new SlashCommandBuilder()
 
 export async function executeClearWarns(interaction: ChatInputCommandInteraction): Promise<void> {
   const target  = interaction.options.getUser("user", true);
-  const current = getWarns(target.id, interaction.guildId ?? "");
+  const current = await getWarns(target.id, interaction.guildId ?? "");
 
   if (current.length === 0) {
     await interaction.editReply({ content: `ℹ️ **${target.tag}** has no warnings on record.` });
@@ -219,7 +219,7 @@ export async function executeClearWarns(interaction: ChatInputCommandInteraction
   }
 
   const amount   = interaction.options.getInteger("amount") ?? current.length;
-  const removed  = removeWarns(target.id, interaction.guildId ?? "", amount);
+  const removed  = await removeWarns(target.id, interaction.guildId ?? "", amount);
   const newTotal = Math.max(0, current.length - removed);
 
   const nextThreshold =

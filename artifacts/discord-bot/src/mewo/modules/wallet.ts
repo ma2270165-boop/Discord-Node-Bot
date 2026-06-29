@@ -12,7 +12,7 @@ const COIN = "🪙";
 
 export const cmdWallet: Handler = async (msg) => {
   const target = msg.mentions.users.first() ?? msg.author;
-  const w = getWallet(target.id);
+  const w = await getWallet(target.id);
   const today = new Date().toISOString().slice(0, 10);
   const canClaim = w.dailyDate !== today;
   const streak = w.streak ?? 0;
@@ -35,7 +35,7 @@ export const cmdWallet: Handler = async (msg) => {
 };
 
 export const cmdWalletDaily: Handler = async (msg) => {
-  const result = claimDaily(msg.author.id);
+  const result = await claimDaily(msg.author.id);
   if (!result.claimed) {
     await msg.reply({
       embeds: [new EmbedBuilder()
@@ -94,26 +94,26 @@ export const cmdWalletPay: Handler = async (msg, args) => {
     await msg.reply({ embeds: [err("Amount must be a positive number.")] });
     return;
   }
-  const senderWallet = getWallet(msg.author.id);
+  const senderWallet = await getWallet(msg.author.id);
   if (senderWallet.balance < amount) {
     await msg.reply({ embeds: [err(`You only have **${senderWallet.balance.toLocaleString()} ${COIN}**. Not enough to pay **${amount.toLocaleString()} ${COIN}**.`)] });
     return;
   }
-  transferCoins(msg.author.id, target.id, amount);
-  const newBalance = getWallet(msg.author.id).balance;
+  await transferCoins(msg.author.id, target.id, amount);
+  const newWallet = await getWallet(msg.author.id);
   await msg.reply({
     embeds: [new EmbedBuilder()
       .setColor(0x57F287)
       .setTitle(`${COIN} Payment Sent`)
       .setDescription(`Sent **${amount.toLocaleString()} ${COIN}** to **${target.username}**.`)
-      .addFields({ name: "Your New Balance", value: `**${newBalance.toLocaleString()} ${COIN}**`, inline: true })
+      .addFields({ name: "Your New Balance", value: `**${newWallet.balance.toLocaleString()} ${COIN}**`, inline: true })
       .setFooter({ text: "mewo • wallet" })
     ],
   });
 };
 
 export const cmdWalletLeaderboard: Handler = async (msg) => {
-  const top = getWalletLeaderboard(10);
+  const top = await getWalletLeaderboard(10);
   if (!top.length) {
     await msg.reply({ embeds: [new EmbedBuilder().setColor(0xFEE75C).setTitle(`${COIN} Leaderboard`).setDescription("No wallets yet. Use `mewo wallet daily` to get started!").setFooter({ text: "mewo • wallet" })] });
     return;
@@ -139,7 +139,7 @@ export const cmdWalletGamble: Handler = async (msg, args) => {
     await msg.reply({ embeds: [err("Usage: `mewo wallet gamble <amount|all>`")] });
     return;
   }
-  const w = getWallet(msg.author.id);
+  const w = await getWallet(msg.author.id);
   const amount = amountStr.toLowerCase() === "all" ? w.balance : Math.floor(Number(amountStr));
   if (isNaN(amount) || amount <= 0) {
     await msg.reply({ embeds: [err("Provide a valid amount or `all`.")] });
@@ -154,7 +154,7 @@ export const cmdWalletGamble: Handler = async (msg, args) => {
   const multiplier = roll > 0.9 ? 3 : roll > 0.7 ? 2 : 1.5;
   const gain = win ? Math.floor(amount * multiplier) : 0;
   const newBalance = win ? w.balance - amount + gain : w.balance - amount;
-  setWalletBalance(msg.author.id, Math.max(0, newBalance));
+  await setWalletBalance(msg.author.id, Math.max(0, newBalance));
   await msg.reply({
     embeds: [new EmbedBuilder()
       .setColor(win ? 0x57F287 : 0xED4245)

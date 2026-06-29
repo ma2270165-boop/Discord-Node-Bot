@@ -106,7 +106,7 @@ export async function handleModerationMessage(
   }
 
   // Increment flag count
-  const newCount = incrementFlag(guildId, message.author.id);
+  const newCount = await incrementFlag(guildId, message.author.id);
 
   // ── Determine action ────────────────────────────────────────────────────────
   let action: "warn1" | "warn2" | "timeout";
@@ -123,7 +123,7 @@ export async function handleModerationMessage(
   if (action === "timeout" && member) {
     // ALWAYS reset flags on flag-3, regardless of whether timeout succeeds.
     // Without this, a failed timeout leaves flags at 3+ forever (infinite loop).
-    resetFlags(guildId, message.author.id);
+    await resetFlags(guildId, message.author.id);
 
     // Discord does not allow bots to timeout server owners — skip silently.
     if (message.guild.ownerId === message.author.id) {
@@ -156,7 +156,7 @@ export async function handleModerationMessage(
   }
 
   // ── Mod-log embed ───────────────────────────────────────────────────────────
-  const config = getCensorConfig(guildId);
+  const config = await getCensorConfig(guildId);
   const logChannelId =
     config.modLogChannelId ?? findModLogChannelId(message);
 

@@ -1,10 +1,6 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = resolve(__dirname, "../../../data");
-const FILE = resolve(DATA_DIR, "training.json");
+import { eq, sql } from "drizzle-orm";
+import { getDb } from "../db.js";
+import { trainingLogsTable, botSequencesTable } from "@workspace/db/schema";
 
 export interface TrainingLog {
   id: string;
@@ -19,46 +15,31 @@ export interface TrainingLog {
   sessionNumber: number;
 }
 
-interface TrainingData {
-  logs: TrainingLog[];
-  counter: number;
+export async function nextTrainingNumber(): Promise<number> {
+  const db = getDb();
+  const rows = await db
+    .insert(botSequencesTable)
+    .values({ name: "training", value: 1 })
+    .onConflictDoUpdate({
+      target: botSequencesTable.name,
+      set: { value: sql`${botSequencesTable.value} + 1` },
+    })
+    .returning({ value: botSequencesTable.value });
+  return rows[0]?.value ?? 1;
 }
 
-function load(): TrainingData {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  if (!existsSync(FILE)) {
-    writeFileSync(FILE, JSON.stringify({ logs: [], counter: 0 }, null, 2));
-    return { logs: [], counter: 0 };
-  }
-  try {
-    const parsed = JSON.parse(readFileSync(FILE, "utf-8")) as Partial<TrainingData>;
-    return {
-      logs: parsed.logs ?? [],
-      counter: parsed.counter ?? 0,
-    };
-  } catch {
-    return { logs: [], counter: 0 };
-  }
+export async function saveTrainingLog(log: TrainingLog): Promise<void> {
+  const db = getDb();
+  await db.insert(trainingLogsTable).values(log).onConflictDoUpdate({
+    target: trainingLogsTable.id,
+    set: { ...log },
+  });
 }
 
-function save(data: TrainingData): void {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(FILE, JSON.stringify(data, null, 2));
-}
-
-export function nextTrainingNumber(): number {
-  const data = load();
-  data.counter += 1;
-  save(data);
-  return data.counter;
-}
-
-export function saveTrainingLog(log: TrainingLog): void {
-  const data = load();
-  data.logs.push(log);
-  save(data);
-}
-
-export function getTrainingLogs(guildId: string): TrainingLog[] {
-  return load().logs.filter((l) => l.guildId === guildId);
+export async function getTrainingLogs(guildId: string): Promise<TrainingLog[]> {
+  const db = getDb();
+  return db
+    .select()
+    .from(trainingLogsTable)
+    .where(eq(trainingLogsTable.guildId, guildId));
 }

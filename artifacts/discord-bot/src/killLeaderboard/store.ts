@@ -1,10 +1,6 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { dirname, resolve } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = resolve(__dirname, "../../../data");
-const DATA_FILE = resolve(DATA_DIR, "kill-leaderboard.json");
+import { eq, asc } from "drizzle-orm";
+import { getDb } from "../db.js";
+import { killLeaderboardPlayersTable, killPinnedMessagesTable } from "@workspace/db/schema";
 
 export type KillStage = string;
 
@@ -34,103 +30,83 @@ export interface KillPinnedMessage {
   messageId: string;
 }
 
-interface KillLeaderboardData {
-  players: KillPlayer[];
-  pinnedMessage?: KillPinnedMessage;
+export async function getKillPlayers(): Promise<KillPlayer[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(killLeaderboardPlayersTable)
+    .orderBy(asc(killLeaderboardPlayersTable.rank));
+  return rows.map(r => ({
+    rank:            r.rank,
+    displayName:     r.displayName,
+    robloxUsername:  r.robloxUsername,
+    discordUsername: r.discordUsername,
+    position:        r.position,
+    killCount:       r.killCount,
+    stage:           r.stage,
+    avatarUrl:       r.avatarUrl,
+  }));
 }
 
-function emptyData(): KillLeaderboardData {
-  return { players: [] };
+export async function killPlayerExistsAtRank(rank: number): Promise<boolean> {
+  const db = getDb();
+  const rows = await db
+    .select({ rank: killLeaderboardPlayersTable.rank })
+    .from(killLeaderboardPlayersTable)
+    .where(eq(killLeaderboardPlayersTable.rank, rank))
+    .limit(1);
+  return rows.length > 0;
 }
 
-function normalize(data: KillLeaderboardData): KillLeaderboardData {
-  return {
-    ...data,
-    players: [...(data.players ?? [])]
-      .map((player) => {
-        const legacyPlayer = player as KillPlayer & { country?: string; rolePosition?: string; position?: string };
-        return {
-          ...player,
-          position: legacyPlayer.position ?? legacyPlayer.rolePosition ?? legacyPlayer.country ?? "Clan Member",
-        };
-      })
-      .sort((a, b) => a.rank - b.rank || b.killCount - a.killCount),
-  };
+export async function addKillPlayer(player: KillPlayer): Promise<void> {
+  const db = getDb();
+  await db.insert(killLeaderboardPlayersTable).values(player);
 }
 
-function load(): KillLeaderboardData {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  if (!existsSync(DATA_FILE)) {
-    const data = emptyData();
-    writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    return data;
-  }
-
-  try {
-    return normalize(JSON.parse(readFileSync(DATA_FILE, "utf-8")) as KillLeaderboardData);
-  } catch {
-    return emptyData();
-  }
+export async function editKillPlayer(rank: number, updates: Partial<KillPlayer>): Promise<boolean> {
+  const db = getDb();
+  const result = await db
+    .update(killLeaderboardPlayersTable)
+    .set(updates)
+    .where(eq(killLeaderboardPlayersTable.rank, rank));
+  return (result.rowCount ?? 0) > 0;
 }
 
-function save(data: KillLeaderboardData): void {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(DATA_FILE, JSON.stringify(normalize(data), null, 2));
+export async function removeKillPlayerByRank(rank: number): Promise<boolean> {
+  const db = getDb();
+  const result = await db
+    .delete(killLeaderboardPlayersTable)
+    .where(eq(killLeaderboardPlayersTable.rank, rank));
+  return (result.rowCount ?? 0) > 0;
 }
 
-export function getKillPlayers(): KillPlayer[] {
-  return load().players;
+export async function moveKillPlayerRank(rank: number, newRank: number): Promise<boolean> {
+  const db = getDb();
+  const result = await db
+    .update(killLeaderboardPlayersTable)
+    .set({ rank: newRank })
+    .where(eq(killLeaderboardPlayersTable.rank, rank));
+  return (result.rowCount ?? 0) > 0;
 }
 
-export function killPlayerExistsAtRank(rank: number): boolean {
-  return load().players.some((p) => p.rank === rank);
+export async function getKillPinnedMessage(): Promise<KillPinnedMessage | undefined> {
+  const db = getDb();
+  const rows = await db.select().from(killPinnedMessagesTable).limit(1);
+  return rows[0] ? { guildId: rows[0].guildId, channelId: rows[0].channelId, messageId: rows[0].messageId } : undefined;
 }
 
-export function addKillPlayer(player: KillPlayer): void {
-  const data = load();
-  data.players.push(player);
-  save(data);
+export async function setKillPinnedMessage(pinned: KillPinnedMessage): Promise<void> {
+  const db = getDb();
+  await db
+    .insert(killPinnedMessagesTable)
+    .values(pinned)
+    .onConflictDoUpdate({
+      target: killPinnedMessagesTable.guildId,
+      set: { channelId: pinned.channelId, messageId: pinned.messageId },
+    });
 }
 
-export function editKillPlayer(rank: number, updates: Partial<KillPlayer>): boolean {
-  const data = load();
-  const index = data.players.findIndex((p) => p.rank === rank);
-  if (index === -1) return false;
-  data.players[index] = { ...data.players[index], ...updates };
-  save(data);
-  return true;
-}
-
-export function removeKillPlayerByRank(rank: number): boolean {
-  const data = load();
-  const before = data.players.length;
-  data.players = data.players.filter((p) => p.rank !== rank);
-  save(data);
-  return data.players.length < before;
-}
-
-export function moveKillPlayerRank(rank: number, newRank: number): boolean {
-  const data = load();
-  const index = data.players.findIndex((p) => p.rank === rank);
-  if (index === -1) return false;
-
-  data.players[index].rank = newRank;
-  save(data);
-  return true;
-}
-
-export function getKillPinnedMessage(): KillPinnedMessage | undefined {
-  return load().pinnedMessage;
-}
-
-export function setKillPinnedMessage(pinned: KillPinnedMessage): void {
-  const data = load();
-  data.pinnedMessage = pinned;
-  save(data);
-}
-
-export function clearKillPinnedMessage(): void {
-  const data = load();
-  delete data.pinnedMessage;
-  save(data);
+export async function clearKillPinnedMessage(): Promise<void> {
+  const db = getDb();
+  await db.delete(killPinnedMessagesTable);
 }

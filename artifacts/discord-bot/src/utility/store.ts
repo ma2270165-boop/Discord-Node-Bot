@@ -1,10 +1,11 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = resolve(__dirname, "../../../data");
-const FILE = resolve(DATA_DIR, "utility.json");
+import { and, eq } from "drizzle-orm";
+import { getDb } from "../db.js";
+import {
+  warnsTable,
+  promotionsTable,
+  attendancesTable,
+  mvpsTable,
+} from "@workspace/db/schema";
 
 export interface WarnEntry {
   id: string;
@@ -52,70 +53,39 @@ export interface MvpEntry {
   guildId: string;
 }
 
-interface UtilityData {
-  warns: WarnEntry[];
-  promotions: PromotionEntry[];
-  attendances: AttendanceEntry[];
-  mvps: MvpEntry[];
+export async function addWarn(entry: WarnEntry): Promise<void> {
+  await getDb().insert(warnsTable).values(entry);
 }
 
-function load(): UtilityData {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  if (!existsSync(FILE)) {
-    const empty: UtilityData = { warns: [], promotions: [], attendances: [], mvps: [] };
-    writeFileSync(FILE, JSON.stringify(empty, null, 2));
-    return empty;
+export async function getWarns(userId: string, guildId: string): Promise<WarnEntry[]> {
+  return getDb()
+    .select()
+    .from(warnsTable)
+    .where(and(eq(warnsTable.userId, userId), eq(warnsTable.guildId, guildId)));
+}
+
+export async function addPromotion(entry: PromotionEntry): Promise<void> {
+  await getDb().insert(promotionsTable).values(entry);
+}
+
+export async function addAttendance(entry: AttendanceEntry): Promise<void> {
+  await getDb().insert(attendancesTable).values(entry);
+}
+
+export async function addMvp(entry: MvpEntry): Promise<void> {
+  await getDb().insert(mvpsTable).values(entry);
+}
+
+export async function removeWarns(userId: string, guildId: string, amount: number): Promise<number> {
+  const db = getDb();
+  const existing = await db
+    .select({ id: warnsTable.id })
+    .from(warnsTable)
+    .where(and(eq(warnsTable.userId, userId), eq(warnsTable.guildId, guildId)))
+    .limit(amount);
+  if (existing.length === 0) return 0;
+  for (const row of existing) {
+    await db.delete(warnsTable).where(eq(warnsTable.id, row.id));
   }
-  try {
-    return JSON.parse(readFileSync(FILE, "utf-8")) as UtilityData;
-  } catch {
-    return { warns: [], promotions: [], attendances: [], mvps: [] };
-  }
-}
-
-function save(data: UtilityData): void {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(FILE, JSON.stringify(data, null, 2));
-}
-
-export function addWarn(entry: WarnEntry): void {
-  const data = load();
-  data.warns.push(entry);
-  save(data);
-}
-
-export function getWarns(userId: string, guildId: string): WarnEntry[] {
-  return load().warns.filter((w) => w.userId === userId && w.guildId === guildId);
-}
-
-export function addPromotion(entry: PromotionEntry): void {
-  const data = load();
-  data.promotions.push(entry);
-  save(data);
-}
-
-export function addAttendance(entry: AttendanceEntry): void {
-  const data = load();
-  data.attendances.push(entry);
-  save(data);
-}
-
-export function addMvp(entry: MvpEntry): void {
-  const data = load();
-  data.mvps.push(entry);
-  save(data);
-}
-
-export function removeWarns(userId: string, guildId: string, amount: number): number {
-  const data = load();
-  const before = data.warns.filter((w) => w.userId === userId && w.guildId === guildId).length;
-  let removed = 0;
-  for (let i = data.warns.length - 1; i >= 0 && removed < amount; i--) {
-    if (data.warns[i].userId === userId && data.warns[i].guildId === guildId) {
-      data.warns.splice(i, 1);
-      removed++;
-    }
-  }
-  save(data);
-  return before - Math.max(0, before - removed);
+  return existing.length;
 }

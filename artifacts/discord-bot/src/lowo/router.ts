@@ -140,8 +140,8 @@ async function cmdChannelDisable(message: Message, _args: string[]): Promise<voi
     await message.reply("❌ You need **Manage Channels** permission.");
     return;
   }
-  disableChannel(message.guildId, message.channelId);
-  const remaining = getChannelList(message.guildId);
+  await disableChannel(message.guildId, message.channelId);
+  const remaining = await getChannelList(message.guildId);
   const msg = remaining.length === 0
     ? `🔇 All channels disabled. Lowo is now **SILENT** in this server. Use \`lowo enable all\` in a channel to reactivate.`
     : `🔇 Lowo disabled in this channel. ${remaining.length} channel(s) still enabled.`;
@@ -152,7 +152,7 @@ async function cmdChannelList(message: Message, args: string[]): Promise<void> {
   if (!message.guildId) { await message.reply("❌ Server-only command."); return; }
   const sub = args[0]?.toLowerCase();
   if (sub === "list") {
-    const list = getChannelList(message.guildId);
+    const list = await getChannelList(message.guildId);
     if (list.length === 0) {
       await message.reply("📋 No channel restrictions set — Lowo responds everywhere on this server.");
     } else {
@@ -591,7 +591,7 @@ export async function handleLowoCommand(message: Message): Promise<boolean> {
     const tail = matches.length
       ? ` — did you mean ${matches.map((m) => `\`lowo ${m}\``).join(" / ")}?`
       : ` — try \`lowo help\`.`;
-    const dynTag = isDynamic(message.guildId) ? "  *(dynamic on)*" : "";
+    const dynTag = (await isDynamic(message.guildId)) ? "  *(dynamic on)*" : "";
     const reply = await message.reply({
       content: `❓ Unknown command \`${sub}\`${tail}${dynTag}`,
       allowedMentions: { repliedUser: false, parse: [] },

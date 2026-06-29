@@ -36,7 +36,7 @@ function isValidUrl(url: string | null | undefined): url is string {
 }
 
 export async function buildKillLeaderboardImage(): Promise<Buffer> {
-  const players = getKillPlayers().slice(0, MAX_PLAYER_CARDS);
+  const players = (await getKillPlayers()).slice(0, MAX_PLAYER_CARDS);
 
   if (players.length === 0) {
     return generateLeaderboardCard("Kill Leaderboard", []);
@@ -60,7 +60,7 @@ export async function buildKillLeaderboardPayload(): Promise<{
   files: AttachmentBuilder[];
 }> {
   const buf = await buildKillLeaderboardImage();
-  const players = getKillPlayers();
+  const players = await getKillPlayers();
   const now = Math.floor(Date.now() / 1000);
 
   return {
@@ -70,24 +70,24 @@ export async function buildKillLeaderboardPayload(): Promise<{
 }
 
 export async function refreshPinnedKillLeaderboard(client: Client): Promise<void> {
-  const pinned = getKillPinnedMessage();
+  const pinned = await getKillPinnedMessage();
   if (!pinned) return;
 
   const guild = await client.guilds.fetch(pinned.guildId).catch(() => null);
   if (!guild) {
-    clearKillPinnedMessage();
+    await clearKillPinnedMessage();
     return;
   }
 
   const channel = (await guild.channels.fetch(pinned.channelId).catch(() => null)) as TextChannel | null;
   if (!channel || !channel.isTextBased()) {
-    clearKillPinnedMessage();
+    await clearKillPinnedMessage();
     return;
   }
 
   const message = await channel.messages.fetch(pinned.messageId).catch(() => null);
   if (!message) {
-    clearKillPinnedMessage();
+    await clearKillPinnedMessage();
     return;
   }
 
@@ -120,7 +120,7 @@ export async function executeSetupKillLeaderboard(
     return;
   }
 
-  const pinned = getKillPinnedMessage();
+  const pinned = await getKillPinnedMessage();
   if (pinned && pinned.guildId === interaction.guildId && pinned.channelId === channel.id) {
     const existingChannel = (await interaction.guild?.channels.fetch(pinned.channelId).catch(() => null)) as TextChannel | null;
     const existingMessage = existingChannel
@@ -144,7 +144,7 @@ export async function executeSetupKillLeaderboard(
     channelId: channel.id,
     messageId: message.id,
   };
-  setKillPinnedMessage(saved);
+  await setKillPinnedMessage(saved);
 
   await interaction.editReply({ content: `✅ Kill leaderboard created:\n${message.url}` });
 }

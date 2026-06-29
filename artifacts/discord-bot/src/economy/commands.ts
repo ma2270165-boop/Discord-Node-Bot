@@ -70,7 +70,7 @@ export const balanceData = new SlashCommandBuilder()
 
 export async function executeBalance(interaction: ChatInputCommandInteraction): Promise<void> {
   const target = interaction.options.getUser("user") ?? interaction.user;
-  const u      = getUser(target.id);
+  const u      = await getUser(target.id);
   const total  = u.balance + u.bank;
   await interaction.editReply({ embeds: [ecoEmbed(0xf59e0b, `${COIN}  BALANCE — ${target.username}`,
     `${HR}\n▸  **Wallet** — \`${fmt(u.balance)}\` coins\n▸  **Bank** — \`${fmt(u.bank)}\` coins\n▸  **Total** — \`${fmt(total)}\` coins\n${HR}`
@@ -83,12 +83,12 @@ export const dailyData = new SlashCommandBuilder()
   .setDescription("Claim your daily coin reward.");
 
 export async function executeDaily(interaction: ChatInputCommandInteraction): Promise<void> {
-  const u   = getUser(interaction.user.id);
+  const u   = await getUser(interaction.user.id);
   const { ok, remaining } = cd(u.lastDaily, 24 * 3600 * 1000);
   if (!ok) { await interaction.editReply({ content: `⏳ Daily already claimed. Try again in **${remaining}**.` }); return; }
   const amount = 100 + Math.floor(Math.random() * 401);
-  addBalance(interaction.user.id, amount);
-  setUser(interaction.user.id, { lastDaily: Date.now() });
+  await addBalance(interaction.user.id, amount);
+  await setUser(interaction.user.id, { lastDaily: Date.now() });
   await interaction.editReply({ embeds: [ecoEmbed(0x2ecc71, "🎁  DAILY REWARD CLAIMED",
     `${HR}\n▸  **Earned** — \`+${fmt(amount)}\` coins\n▸  **New Balance** — \`${fmt(u.balance + amount)}\` coins\n${HR}\nCome back in **24 hours** for your next reward!`
   ).setThumbnail(interaction.user.displayAvatarURL())] });
@@ -100,12 +100,12 @@ export const weeklyData = new SlashCommandBuilder()
   .setDescription("Claim your weekly coin reward.");
 
 export async function executeWeekly(interaction: ChatInputCommandInteraction): Promise<void> {
-  const u   = getUser(interaction.user.id);
+  const u   = await getUser(interaction.user.id);
   const { ok, remaining } = cd(u.lastWeekly, 7 * 24 * 3600 * 1000);
   if (!ok) { await interaction.editReply({ content: `⏳ Weekly already claimed. Try again in **${remaining}**.` }); return; }
   const amount = 1000 + Math.floor(Math.random() * 2001);
-  addBalance(interaction.user.id, amount);
-  setUser(interaction.user.id, { lastWeekly: Date.now() });
+  await addBalance(interaction.user.id, amount);
+  await setUser(interaction.user.id, { lastWeekly: Date.now() });
   await interaction.editReply({ embeds: [ecoEmbed(0xf59e0b, "🎁  WEEKLY REWARD CLAIMED",
     `${HR}\n▸  **Earned** — \`+${fmt(amount)}\` coins\n▸  **New Balance** — \`${fmt(u.balance + amount)}\` coins\n${HR}\nCome back in **7 days** for your next reward!`
   ).setThumbnail(interaction.user.displayAvatarURL())] });
@@ -117,13 +117,13 @@ export const workData = new SlashCommandBuilder()
   .setDescription("Work a job to earn coins.");
 
 export async function executeWork(interaction: ChatInputCommandInteraction): Promise<void> {
-  const u   = getUser(interaction.user.id);
+  const u   = await getUser(interaction.user.id);
   const { ok, remaining } = cd(u.lastWork, 60 * 60 * 1000);
   if (!ok) { await interaction.editReply({ content: `⏳ You're tired. Work again in **${remaining}**.` }); return; }
   const [jobDesc, [min, max]] = WORK_JOBS[Math.floor(Math.random() * WORK_JOBS.length)];
   const amount = min + Math.floor(Math.random() * (max - min + 1));
-  addBalance(interaction.user.id, amount);
-  setUser(interaction.user.id, { lastWork: Date.now() });
+  await addBalance(interaction.user.id, amount);
+  await setUser(interaction.user.id, { lastWork: Date.now() });
   await interaction.editReply({ embeds: [ecoEmbed(0x3b82f6, "💼  WORK COMPLETE",
     `${HR}\n<@${interaction.user.id}> ${jobDesc} and earned **${fmt(amount)} coins**!\n▸  **New Balance** — \`${fmt(u.balance + amount)}\` coins\n${HR}\nWork again in **1 hour**.`
   )] });
@@ -154,17 +154,17 @@ export async function executeBuy(interaction: ChatInputCommandInteraction): Prom
   const itemId = interaction.options.getString("item", true);
   const item   = SHOP_ITEMS.find((i) => i.id === itemId);
   if (!item) { await interaction.editReply({ content: "❌ Item not found." }); return; }
-  const u = getUser(interaction.user.id);
+  const u = await getUser(interaction.user.id);
   if (u.balance < item.price) {
     await interaction.editReply({ content: `❌ Not enough coins. You need **${fmt(item.price - u.balance)}** more.` });
     return;
   }
-  addBalance(interaction.user.id, -item.price);
+  await addBalance(interaction.user.id, -item.price);
   const inv = [...u.inventory];
   const existing = inv.find((i) => i.name === item.name);
   if (existing) existing.qty++;
   else inv.push({ name: item.name, qty: 1, price: item.price });
-  setUser(interaction.user.id, { inventory: inv });
+  await setUser(interaction.user.id, { inventory: inv });
   await interaction.editReply({ embeds: [ecoEmbed(0x2ecc71, "✅  ITEM PURCHASED",
     `${HR}\n▸  **Item** — ${item.name}\n▸  **Cost** — \`${fmt(item.price)} coins\`\n▸  **Balance** — \`${fmt(u.balance - item.price)} coins\`\n${HR}`
   )] });
@@ -182,10 +182,10 @@ export async function executeTransfer(interaction: ChatInputCommandInteraction):
   const amount = interaction.options.getInteger("amount", true);
   if (target.id === interaction.user.id) { await interaction.editReply({ content: "❌ You can't send coins to yourself." }); return; }
   if (target.bot) { await interaction.editReply({ content: "❌ You can't send coins to a bot." }); return; }
-  const sender = getUser(interaction.user.id);
+  const sender = await getUser(interaction.user.id);
   if (sender.balance < amount) { await interaction.editReply({ content: `❌ Insufficient balance. You only have **${fmt(sender.balance)} coins**.` }); return; }
-  addBalance(interaction.user.id, -amount);
-  addBalance(target.id, amount);
+  await addBalance(interaction.user.id, -amount);
+  await addBalance(target.id, amount);
   await interaction.editReply({ embeds: [ecoEmbed(0x2ecc71, "💸  TRANSFER SENT",
     `${HR}\n▸  **From** — <@${interaction.user.id}>\n▸  **To** — <@${target.id}>\n▸  **Amount** — \`${fmt(amount)} coins\`\n▸  **Your Balance** — \`${fmt(sender.balance - amount)} coins\`\n${HR}`
   )] });
@@ -201,23 +201,23 @@ export async function executeRob(interaction: ChatInputCommandInteraction): Prom
   const target = interaction.options.getUser("user", true);
   if (target.id === interaction.user.id) { await interaction.editReply({ content: "❌ You can't rob yourself." }); return; }
   if (target.bot) { await interaction.editReply({ content: "❌ Bots are un-robbable." }); return; }
-  const u = getUser(interaction.user.id);
+  const u = await getUser(interaction.user.id);
   const { ok, remaining } = cd(u.lastRob, 2 * 3600 * 1000);
   if (!ok) { await interaction.editReply({ content: `⏳ You're laying low. Rob again in **${remaining}**.` }); return; }
-  setUser(interaction.user.id, { lastRob: Date.now() });
-  const victim = getUser(target.id);
+  await setUser(interaction.user.id, { lastRob: Date.now() });
+  const victim = await getUser(target.id);
   if (victim.balance < 50) { await interaction.editReply({ content: `❌ <@${target.id}> is too broke to rob (less than 50 coins).` }); return; }
   const success = Math.random() < 0.5;
   if (success) {
     const stolen = Math.min(victim.balance, Math.floor(50 + Math.random() * Math.min(victim.balance * 0.4, 500)));
-    addBalance(target.id, -stolen);
-    addBalance(interaction.user.id, stolen);
+    await addBalance(target.id, -stolen);
+    await addBalance(interaction.user.id, stolen);
     await interaction.editReply({ embeds: [ecoEmbed(0xe74c3c, "🔪  ROB SUCCESSFUL",
       `${HR}\n<@${interaction.user.id}> robbed <@${target.id}> and got away with **${fmt(stolen)} coins**!\n▸  **Your Balance** — \`${fmt(u.balance + stolen)} coins\`\n${HR}`
     )] });
   } else {
     const fine = Math.min(u.balance, Math.floor(30 + Math.random() * 120));
-    addBalance(interaction.user.id, -fine);
+    await addBalance(interaction.user.id, -fine);
     await interaction.editReply({ embeds: [ecoEmbed(0x94a3b8, "🚔  CAUGHT!",
       `${HR}\n<@${interaction.user.id}> failed to rob <@${target.id}> and got fined **${fmt(fine)} coins**!\n▸  **Your Balance** — \`${fmt(u.balance - fine)} coins\`\n${HR}`
     )] });
@@ -232,7 +232,7 @@ export const investData = new SlashCommandBuilder()
 
 export async function executeInvest(interaction: ChatInputCommandInteraction): Promise<void> {
   const amount = interaction.options.getInteger("amount", true);
-  const u      = getUser(interaction.user.id);
+  const u      = await getUser(interaction.user.id);
 
   if (u.investAt > Date.now()) {
     const remaining = new Date(u.investAt).toLocaleString();
@@ -240,22 +240,21 @@ export async function executeInvest(interaction: ChatInputCommandInteraction): P
     return;
   }
 
-  // Collect matured investment if any
   if (u.investAmount > 0 && u.investAt > 0 && u.investAt <= Date.now()) {
     const outcomes: [number, number][] = [[0.4, 1.5], [0.25, 2.0], [0.2, 0.7], [0.1, 3.0], [0.05, 0.1]];
     let roll = Math.random(), mult = 1.0;
     for (const [chance, m] of outcomes) { if (roll < chance) { mult = m; break; } roll -= chance; }
     const returned = Math.floor(u.investAmount * mult);
-    addBalance(interaction.user.id, returned);
-    setUser(interaction.user.id, { investAmount: 0, investAt: 0 });
+    await addBalance(interaction.user.id, returned);
+    await setUser(interaction.user.id, { investAmount: 0, investAt: 0 });
     await interaction.editReply({ content: `📈 Your investment matured! **${fmt(u.investAmount)} coins** → **${fmt(returned)} coins** (${mult}×).` });
     return;
   }
 
   if (u.balance < amount) { await interaction.editReply({ content: `❌ Insufficient balance.` }); return; }
-  addBalance(interaction.user.id, -amount);
+  await addBalance(interaction.user.id, -amount);
   const matureAt = Date.now() + 24 * 3600 * 1000;
-  setUser(interaction.user.id, { investAmount: amount, investAt: matureAt });
+  await setUser(interaction.user.id, { investAmount: amount, investAt: matureAt });
   await interaction.editReply({ embeds: [ecoEmbed(0x3b82f6, "📈  INVESTMENT MADE",
     `${HR}\n▸  **Invested** — \`${fmt(amount)} coins\`\n▸  **Matures at** — <t:${Math.floor(matureAt / 1000)}:F>\n▸  **Possible return** — 0.1× to 3.0×\n${HR}\nRun \`/invest amount:1\` after maturity to collect.`
   )] });
@@ -267,21 +266,21 @@ export const crimeData = new SlashCommandBuilder()
   .setDescription("Commit a crime for a high-risk, high-reward payout.");
 
 export async function executeCrime(interaction: ChatInputCommandInteraction): Promise<void> {
-  const u = getUser(interaction.user.id);
+  const u = await getUser(interaction.user.id);
   const { ok, remaining } = cd(u.lastCrime, 90 * 60 * 1000);
   if (!ok) { await interaction.editReply({ content: `⏳ Lying low. Try again in **${remaining}**.` }); return; }
-  setUser(interaction.user.id, { lastCrime: Date.now() });
+  await setUser(interaction.user.id, { lastCrime: Date.now() });
   const [desc, [min, max], chance] = CRIME_EVENTS[Math.floor(Math.random() * CRIME_EVENTS.length)];
   const success = Math.random() < chance;
   if (success) {
     const earned = min + Math.floor(Math.random() * (max - min + 1));
-    addBalance(interaction.user.id, earned);
+    await addBalance(interaction.user.id, earned);
     await interaction.editReply({ embeds: [ecoEmbed(0xe74c3c, "🦹  CRIME SUCCEEDED",
       `${HR}\n<@${interaction.user.id}> ${desc} and pocketed **${fmt(earned)} coins**!\n▸  **Balance** — \`${fmt(u.balance + earned)} coins\`\n${HR}`
     )] });
   } else {
     const fine = Math.min(u.balance, 50 + Math.floor(Math.random() * 200));
-    addBalance(interaction.user.id, -fine);
+    await addBalance(interaction.user.id, -fine);
     await interaction.editReply({ embeds: [ecoEmbed(0x94a3b8, "🚓  CRIME FAILED",
       `${HR}\n<@${interaction.user.id}> tried to ${desc.split(" ").slice(1).join(" ")} but got caught!\nFined **${fmt(fine)} coins**.\n▸  **Balance** — \`${fmt(u.balance - fine)} coins\`\n${HR}`
     )] });
@@ -296,7 +295,7 @@ export const inventoryData = new SlashCommandBuilder()
 
 export async function executeInventory(interaction: ChatInputCommandInteraction): Promise<void> {
   const target = interaction.options.getUser("user") ?? interaction.user;
-  const u      = getUser(target.id);
+  const u      = await getUser(target.id);
   const items  = u.inventory.filter((i) => i.qty > 0);
   const desc   = items.length === 0
     ? "Empty — use `/buy` to get items from the shop."
@@ -306,13 +305,13 @@ export async function executeInventory(interaction: ChatInputCommandInteraction)
   ).setThumbnail(target.displayAvatarURL())] });
 }
 
-// ── /leaderboard (economy) ────────────────────────────────────────────────────
+// ── /ecotop ───────────────────────────────────────────────────────────────────
 export const ecoLeaderboardData = new SlashCommandBuilder()
   .setName("ecotop")
   .setDescription("Show the top richest users on the economy leaderboard.");
 
 export async function executeEcoLeaderboard(interaction: ChatInputCommandInteraction): Promise<void> {
-  const top   = getTopUsers(10);
+  const top = await getTopUsers(10);
   if (top.length === 0) { await interaction.editReply({ content: "📭 No economy data yet." }); return; }
   const lines = await Promise.all(top.map(async ({ userId, balance }, i) => {
     const user = await interaction.client.users.fetch(userId).catch(() => null);

@@ -289,7 +289,7 @@ export async function executeEndRaid(
   const topPerformers = interaction.options.getString("top_performers", true);
   const notes         = interaction.options.getString("notes");
 
-  const raidNumber = nextRaidNumber();
+  const raidNumber = await nextRaidNumber();
 
   type Outcome = {
     authorLabel: string;
@@ -338,7 +338,7 @@ export async function executeEndRaid(
     })
     .setTimestamp();
 
-  saveRaidResult({
+  await saveRaidResult({
     id: `${Date.now()}`,
     clanName,
     opponentClan,

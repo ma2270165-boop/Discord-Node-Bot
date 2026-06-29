@@ -1,10 +1,6 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = resolve(__dirname, "../../../data");
-const DATA_FILE = resolve(DATA_DIR, "leaderboard.json");
+import { eq, asc } from "drizzle-orm";
+import { getDb } from "../db.js";
+import { leaderboardPlayersTable, leaderboardPinnedMessagesTable } from "@workspace/db/schema";
 
 export type StageRank =
   | "High Strong"
@@ -14,26 +10,22 @@ export type StageRank =
   | "Weak Stable";
 
 export const STAGE_RANKS: StageRank[] = [
-  "High Strong",
-  "High Stable",
-  "Mid Strong",
-  "Mid Stable",
-  "Weak Stable",
+  "High Strong", "High Stable", "Mid Strong", "Mid Stable", "Weak Stable",
 ];
 
 export const STAGE_RANK_COLORS: Record<StageRank, number> = {
   "High Strong": 0xffd700,
   "High Stable": 0xf39c12,
-  "Mid Strong": 0x3498db,
-  "Mid Stable": 0x9b59b6,
+  "Mid Strong":  0x3498db,
+  "Mid Stable":  0x9b59b6,
   "Weak Stable": 0x95a5a6,
 };
 
 export const STAGE_RANK_EMOJI: Record<StageRank, string> = {
   "High Strong": "🏆",
   "High Stable": "🥇",
-  "Mid Strong": "🥈",
-  "Mid Stable": "🥉",
+  "Mid Strong":  "🥈",
+  "Mid Stable":  "🥉",
   "Weak Stable": "⚔️",
 };
 
@@ -53,77 +45,73 @@ export interface PinnedMessage {
   messageId: string;
 }
 
-interface LeaderboardData {
-  players: LeaderboardPlayer[];
-  pinnedMessage?: PinnedMessage;
+export async function getPlayers(): Promise<LeaderboardPlayer[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(leaderboardPlayersTable)
+    .orderBy(asc(leaderboardPlayersTable.position));
+  return rows.map(r => ({
+    position:        r.position,
+    displayName:     r.displayName,
+    robloxUsername:  r.robloxUsername,
+    discordUsername: r.discordUsername,
+    country:         r.country,
+    avatarUrl:       r.avatarUrl,
+    stageRank:       r.stageRank as StageRank,
+  }));
 }
 
-function load(): LeaderboardData {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  if (!existsSync(DATA_FILE)) {
-    writeFileSync(DATA_FILE, JSON.stringify({ players: [] }, null, 2));
-    return { players: [] };
-  }
-  try {
-    return JSON.parse(readFileSync(DATA_FILE, "utf-8")) as LeaderboardData;
-  } catch {
-    return { players: [] };
-  }
+export async function addPlayer(player: LeaderboardPlayer): Promise<void> {
+  const db = getDb();
+  await db.insert(leaderboardPlayersTable).values(player);
 }
 
-function save(data: LeaderboardData): void {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+export async function removePlayerByPosition(position: number): Promise<boolean> {
+  const db = getDb();
+  const result = await db
+    .delete(leaderboardPlayersTable)
+    .where(eq(leaderboardPlayersTable.position, position));
+  return (result.rowCount ?? 0) > 0;
 }
 
-export function getPlayers(): LeaderboardPlayer[] {
-  return load().players.sort((a, b) => a.position - b.position);
+export async function editPlayer(position: number, updates: Partial<LeaderboardPlayer>): Promise<boolean> {
+  const db = getDb();
+  const result = await db
+    .update(leaderboardPlayersTable)
+    .set(updates)
+    .where(eq(leaderboardPlayersTable.position, position));
+  return (result.rowCount ?? 0) > 0;
 }
 
-export function addPlayer(player: LeaderboardPlayer): void {
-  const data = load();
-  data.players.push(player);
-  data.players.sort((a, b) => a.position - b.position);
-  save(data);
+export async function playerExistsAtPosition(position: number): Promise<boolean> {
+  const db = getDb();
+  const rows = await db
+    .select({ position: leaderboardPlayersTable.position })
+    .from(leaderboardPlayersTable)
+    .where(eq(leaderboardPlayersTable.position, position))
+    .limit(1);
+  return rows.length > 0;
 }
 
-export function removePlayerByPosition(position: number): boolean {
-  const data = load();
-  const before = data.players.length;
-  data.players = data.players.filter((p) => p.position !== position);
-  save(data);
-  return data.players.length < before;
+export async function getPinnedMessage(): Promise<PinnedMessage | undefined> {
+  const db = getDb();
+  const rows = await db.select().from(leaderboardPinnedMessagesTable).limit(1);
+  return rows[0];
 }
 
-export function editPlayer(
-  position: number,
-  updates: Partial<LeaderboardPlayer>
-): boolean {
-  const data = load();
-  const idx = data.players.findIndex((p) => p.position === position);
-  if (idx === -1) return false;
-  data.players[idx] = { ...data.players[idx], ...updates };
-  data.players.sort((a, b) => a.position - b.position);
-  save(data);
-  return true;
+export async function setPinnedMessage(pinned: PinnedMessage): Promise<void> {
+  const db = getDb();
+  await db
+    .insert(leaderboardPinnedMessagesTable)
+    .values(pinned)
+    .onConflictDoUpdate({
+      target: leaderboardPinnedMessagesTable.guildId,
+      set: { channelId: pinned.channelId, messageId: pinned.messageId },
+    });
 }
 
-export function playerExistsAtPosition(position: number): boolean {
-  return load().players.some((p) => p.position === position);
-}
-
-export function getPinnedMessage(): PinnedMessage | undefined {
-  return load().pinnedMessage;
-}
-
-export function setPinnedMessage(pinned: PinnedMessage): void {
-  const data = load();
-  data.pinnedMessage = pinned;
-  save(data);
-}
-
-export function clearPinnedMessage(): void {
-  const data = load();
-  delete data.pinnedMessage;
-  save(data);
+export async function clearPinnedMessage(): Promise<void> {
+  const db = getDb();
+  await db.delete(leaderboardPinnedMessagesTable);
 }

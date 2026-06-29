@@ -1,4 +1,9 @@
-import { getPool } from "../persistence.js";
+import { eq } from "drizzle-orm";
+import { getDb } from "../db.js";
+import {
+  antiNukeConfigTable,
+  antiNukeWhitelistTable,
+} from "@workspace/db/schema";
 
 export type ActionType =
   | "channelDelete"
@@ -30,11 +35,10 @@ export const DEFAULT_THRESHOLDS: AntiNukeConfig["thresholds"] = {
 // guildId → executorId → actionType → timestamps[]
 const actionMap = new Map<string, Map<string, Map<ActionType, number[]>>>();
 
-// ── In-memory caches ───────────────────────────────────────────────────────
+// ── In-memory caches (config rarely changes; avoid a DB round-trip per event) ──
 const whitelistCache = new Map<string, Set<string>>();
 const configCache    = new Map<string, AntiNukeConfig>();
 
-// Record an action for an executor. Returns true when threshold is crossed.
 export function recordAction(
   guildId: string,
   executorId: string,
@@ -47,21 +51,17 @@ export function recordAction(
 
   if (!actionMap.has(guildId)) actionMap.set(guildId, new Map());
   const byGuild = actionMap.get(guildId)!;
-
   if (!byGuild.has(executorId)) byGuild.set(executorId, new Map());
   const byUser = byGuild.get(executorId)!;
-
   if (!byUser.has(action)) byUser.set(action, []);
   const timestamps = byUser.get(action)!;
 
   const fresh = timestamps.filter(t => t > cutoff);
   fresh.push(now);
   byUser.set(action, fresh);
-
   return fresh.length >= count;
 }
 
-// Clear action history for an executor after quarantine.
 export function clearActions(guildId: string, executorId: string): void {
   actionMap.get(guildId)?.delete(executorId);
 }
@@ -70,11 +70,13 @@ export function clearActions(guildId: string, executorId: string): void {
 export async function getWhitelist(guildId: string): Promise<Set<string>> {
   if (whitelistCache.has(guildId)) return whitelistCache.get(guildId)!;
   try {
-    const res = await getPool().query<{ value: string[] }>(
-      "SELECT value FROM bot_kv WHERE key = $1",
-      [`antinuke_whitelist:${guildId}`],
-    );
-    const s = new Set<string>(res.rows[0]?.value ?? []);
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(antiNukeWhitelistTable)
+      .where(eq(antiNukeWhitelistTable.guildId, guildId))
+      .limit(1);
+    const s = new Set<string>(rows[0]?.userIds ?? []);
     whitelistCache.set(guildId, s);
     return s;
   } catch { return new Set(); }
@@ -82,27 +84,35 @@ export async function getWhitelist(guildId: string): Promise<Set<string>> {
 
 export async function saveWhitelist(guildId: string, whitelist: Set<string>): Promise<void> {
   whitelistCache.set(guildId, whitelist);
-  await getPool().query(
-    `INSERT INTO bot_kv (key, value, updated_at) VALUES ($1, $2::jsonb, NOW())
-     ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = NOW()`,
-    [`antinuke_whitelist:${guildId}`, JSON.stringify([...whitelist])],
-  );
+  const db = getDb();
+  await db
+    .insert(antiNukeWhitelistTable)
+    .values({ guildId, userIds: [...whitelist] })
+    .onConflictDoUpdate({
+      target: antiNukeWhitelistTable.guildId,
+      set: { userIds: [...whitelist] },
+    });
 }
 
 // ── Config ─────────────────────────────────────────────────────────────────
 export async function getConfig(guildId: string): Promise<AntiNukeConfig> {
   if (configCache.has(guildId)) return configCache.get(guildId)!;
   try {
-    const res = await getPool().query<{ value: Partial<AntiNukeConfig> }>(
-      "SELECT value FROM bot_kv WHERE key = $1",
-      [`antinuke_config:${guildId}`],
-    );
-    const raw = res.rows[0]?.value;
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(antiNukeConfigTable)
+      .where(eq(antiNukeConfigTable.guildId, guildId))
+      .limit(1);
+    const row = rows[0];
+    if (!row) {
+      return { enabled: false, logChannelId: null, logPingIds: [], thresholds: { ...DEFAULT_THRESHOLDS } };
+    }
     const cfg: AntiNukeConfig = {
-      enabled:      raw?.enabled      ?? false,
-      logChannelId: raw?.logChannelId ?? null,
-      logPingIds:   (raw as Partial<AntiNukeConfig>)?.logPingIds ?? [],
-      thresholds:   { ...DEFAULT_THRESHOLDS, ...(raw?.thresholds ?? {}) },
+      enabled:      row.enabled,
+      logChannelId: row.logChannelId ?? null,
+      logPingIds:   row.logPingIds ?? [],
+      thresholds:   { ...DEFAULT_THRESHOLDS, ...(row.thresholds as Partial<AntiNukeConfig["thresholds"]> ?? {}) },
     };
     configCache.set(guildId, cfg);
     return cfg;
@@ -113,9 +123,23 @@ export async function getConfig(guildId: string): Promise<AntiNukeConfig> {
 
 export async function saveConfig(guildId: string, cfg: AntiNukeConfig): Promise<void> {
   configCache.set(guildId, cfg);
-  await getPool().query(
-    `INSERT INTO bot_kv (key, value, updated_at) VALUES ($1, $2::jsonb, NOW())
-     ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = NOW()`,
-    [`antinuke_config:${guildId}`, JSON.stringify(cfg)],
-  );
+  const db = getDb();
+  await db
+    .insert(antiNukeConfigTable)
+    .values({
+      guildId,
+      enabled:      cfg.enabled,
+      logChannelId: cfg.logChannelId,
+      logPingIds:   cfg.logPingIds,
+      thresholds:   cfg.thresholds as Record<string, unknown>,
+    })
+    .onConflictDoUpdate({
+      target: antiNukeConfigTable.guildId,
+      set: {
+        enabled:      cfg.enabled,
+        logChannelId: cfg.logChannelId,
+        logPingIds:   cfg.logPingIds,
+        thresholds:   cfg.thresholds as Record<string, unknown>,
+      },
+    });
 }

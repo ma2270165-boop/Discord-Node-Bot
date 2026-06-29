@@ -1,93 +1,70 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { eq } from "drizzle-orm";
+import { getDb } from "../db.js";
+import { lowoGuildSettingsTable } from "@workspace/db/schema";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const DATA_DIR = resolve(__dirname, "../../data");
-const FILE = join(DATA_DIR, "lowo_channels.json");
-
-/**
- * whitelistMode: guild IDs that have ever called "lowo enable all".
- *   Once a guild enters whitelist mode it NEVER leaves it automatically.
- *   An empty channels list + whitelistMode = total silence (only bypass cmds work).
- *
- * channels: the actual per-guild allow-list.
- */
-interface State {
-  whitelistMode: string[];
-  channels: Record<string, string[]>;
+// ── In-memory cache: guild settings are read on every message ─────────────
+interface LowoSettings {
+  whitelistMode: boolean;
+  allowedChannels: string[];
 }
+const cache = new Map<string, LowoSettings>();
 
-let cache: State | null = null;
-
-function readStore(): State {
-  if (cache) return cache;
+async function getSettings(guildId: string): Promise<LowoSettings> {
+  if (cache.has(guildId)) return cache.get(guildId)!;
   try {
-    if (existsSync(FILE)) {
-      const raw = JSON.parse(readFileSync(FILE, "utf-8")) as Partial<State>;
-      cache = {
-        whitelistMode: raw.whitelistMode ?? [],
-        channels: raw.channels ?? {},
-      };
-    }
-  } catch { /* fallthrough */ }
-  if (!cache) cache = { whitelistMode: [], channels: {} };
-  return cache;
+    const db = getDb();
+    const rows = await db
+      .select({
+        whitelistMode:   lowoGuildSettingsTable.whitelistMode,
+        allowedChannels: lowoGuildSettingsTable.allowedChannels,
+      })
+      .from(lowoGuildSettingsTable)
+      .where(eq(lowoGuildSettingsTable.guildId, guildId))
+      .limit(1);
+    const s: LowoSettings = rows[0]
+      ? { whitelistMode: rows[0].whitelistMode, allowedChannels: rows[0].allowedChannels ?? [] }
+      : { whitelistMode: false, allowedChannels: [] };
+    cache.set(guildId, s);
+    return s;
+  } catch { return { whitelistMode: false, allowedChannels: [] }; }
 }
 
-function writeStore(): void {
-  if (!cache) return;
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(FILE, JSON.stringify(cache, null, 2), "utf-8");
+async function saveSettings(guildId: string, s: LowoSettings): Promise<void> {
+  cache.set(guildId, s);
+  const db = getDb();
+  await db
+    .insert(lowoGuildSettingsTable)
+    .values({ guildId, whitelistMode: s.whitelistMode, allowedChannels: s.allowedChannels })
+    .onConflictDoUpdate({
+      target: lowoGuildSettingsTable.guildId,
+      set: { whitelistMode: s.whitelistMode, allowedChannels: s.allowedChannels },
+    });
 }
 
-/**
- * Returns true if Lowo should respond in this channel.
- *
- * Rules:
- *  - Guild NOT in whitelistMode → always allowed (no restrictions configured yet).
- *  - Guild IN whitelistMode     → allowed only if channelId is in the list.
- *    An empty list means the guild is in full-silence mode.
- */
-export function isChannelAllowed(guildId: string | null, channelId: string): boolean {
+export async function isChannelAllowed(guildId: string | null, channelId: string): Promise<boolean> {
   if (!guildId) return true;
-  const s = readStore();
-  if (!s.whitelistMode.includes(guildId)) return true; // no restrictions configured
-  return (s.channels[guildId] ?? []).includes(channelId);
+  const s = await getSettings(guildId);
+  if (!s.whitelistMode) return true;
+  return s.allowedChannels.includes(channelId);
 }
 
-/** Returns the current allow-list for a guild (may be empty). */
-export function getChannelList(guildId: string): string[] {
-  return readStore().channels[guildId] ?? [];
+export async function getChannelList(guildId: string): Promise<string[]> {
+  return (await getSettings(guildId)).allowedChannels;
 }
 
-/** Returns true if the guild has ever enabled the whitelist. */
-export function isWhitelistMode(guildId: string): boolean {
-  return readStore().whitelistMode.includes(guildId);
+export async function isWhitelistMode(guildId: string): Promise<boolean> {
+  return (await getSettings(guildId)).whitelistMode;
 }
 
-/**
- * Enables the current channel for a guild.
- * Also marks the guild as being in whitelistMode (irreversible).
- */
-export function enableChannel(guildId: string, channelId: string): void {
-  const s = readStore();
-  if (!s.whitelistMode.includes(guildId)) s.whitelistMode.push(guildId);
-  const set = new Set(s.channels[guildId] ?? []);
+export async function enableChannel(guildId: string, channelId: string): Promise<void> {
+  const s = await getSettings(guildId);
+  const set = new Set(s.allowedChannels);
   set.add(channelId);
-  s.channels[guildId] = Array.from(set);
-  writeStore();
+  await saveSettings(guildId, { whitelistMode: true, allowedChannels: [...set] });
 }
 
-/**
- * Removes a channel from the allow-list.
- * Also marks the guild as being in whitelistMode so that an empty list
- * means full silence (not "unconfigured / allow everywhere").
- */
-export function disableChannel(guildId: string, channelId: string): void {
-  const s = readStore();
-  if (!s.whitelistMode.includes(guildId)) s.whitelistMode.push(guildId);
-  s.channels[guildId] = (s.channels[guildId] ?? []).filter((id) => id !== channelId);
-  writeStore();
+export async function disableChannel(guildId: string, channelId: string): Promise<void> {
+  const s = await getSettings(guildId);
+  const channels = s.allowedChannels.filter(id => id !== channelId);
+  await saveSettings(guildId, { whitelistMode: true, allowedChannels: channels });
 }

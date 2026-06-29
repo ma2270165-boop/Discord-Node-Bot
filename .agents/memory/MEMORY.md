@@ -1,0 +1,1 @@
+- [Drizzle async-store migration](drizzle-migration.md) — all JSON/bot_kv stores replaced with async Drizzle ORM; callers must await every store function.

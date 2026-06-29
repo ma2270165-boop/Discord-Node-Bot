@@ -139,7 +139,7 @@ export async function executeAddKillPlayer(
   client: Client
 ): Promise<void> {
   const rank = interaction.options.getInteger("rank", true);
-  if (killPlayerExistsAtRank(rank)) {
+  if (await killPlayerExistsAtRank(rank)) {
     await interaction.editReply({
       embeds: [
         successEmbed(
@@ -213,7 +213,7 @@ export async function executeEditKillPlayer(
   const avatarUrl = interaction.options.getString("avatar_url");
 
   if (newRank !== null) {
-    if (newRank !== rank && killPlayerExistsAtRank(newRank)) {
+    if (newRank !== rank && await killPlayerExistsAtRank(newRank)) {
       await interaction.editReply({
         embeds: [
           successEmbed(
@@ -302,21 +302,21 @@ export async function executeMoveKillPlayer(
   const rank = interaction.options.getInteger("rank", true);
   const newRank = interaction.options.getInteger("new_rank", true);
 
-  if (!killPlayerExistsAtRank(rank)) {
+  if (!await killPlayerExistsAtRank(rank)) {
     await interaction.editReply({
       embeds: [successEmbed("❌ Player Not Found", `No kill leaderboard player exists at rank **#${rank}**.`, 0xef4444)],
     });
     return;
   }
 
-  if (newRank !== rank && killPlayerExistsAtRank(newRank)) {
+  if (newRank !== rank && await killPlayerExistsAtRank(newRank)) {
     await interaction.editReply({
       embeds: [successEmbed("❌ Rank Already Filled", `Rank **#${newRank}** already belongs to another player.`, 0xef4444)],
     });
     return;
   }
 
-  moveKillPlayerRank(rank, newRank);
+  await moveKillPlayerRank(rank, newRank);
   await refreshPinnedKillLeaderboard(client);
 
   await interaction.editReply({

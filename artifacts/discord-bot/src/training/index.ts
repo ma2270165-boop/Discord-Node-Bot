@@ -117,7 +117,7 @@ async function executeStartTraining(
   const attendance   = interaction.options.getString("attendance") || "Open to all";
   const notes        = interaction.options.getString("notes");
 
-  const sessionNumber = nextTrainingNumber();
+  const sessionNumber = await nextTrainingNumber();
 
   const fields: { name: string; value: string; inline?: boolean }[] = [
     { name: "◈  GAME LINK", value: `[▸ Join the Session](${gameLink})` },
@@ -157,7 +157,7 @@ async function executeEndTraining(
   const mvp               = interaction.options.getString("mvp", true);
   const notes             = interaction.options.getString("notes");
 
-  const sessionNumber = nextTrainingNumber();
+  const sessionNumber = await nextTrainingNumber();
 
   const fields: { name: string; value: string; inline?: boolean }[] = [
     { name: "SESSION MVP", value: formatPerformers(mvp) },
@@ -180,7 +180,7 @@ async function executeEndTraining(
     .setFooter({ text: `Session #${sessionNumber}  ·  Logged by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
     .setTimestamp();
 
-  saveTrainingLog({
+  await saveTrainingLog({
     id: `${Date.now()}`,
     host,
     durationCompleted,

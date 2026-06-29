@@ -19,7 +19,7 @@ export const cmdChatgpt: Handler = async (msg, args) => {
     await msg.reply({ embeds: [err("Provide a prompt. Usage: `mewo ai chatgpt <prompt>`")] });
     return;
   }
-  const usage = getAiUsage(msg.author.id);
+  const usage = await getAiUsage(msg.author.id);
   if (usage.chatgpt >= AI_DAILY_LIMIT) {
     await msg.reply({ embeds: [err(`Daily limit reached (${AI_DAILY_LIMIT} requests). Resets at midnight UTC.`)] });
     return;
@@ -80,7 +80,7 @@ export const cmdChatgpt: Handler = async (msg, args) => {
       throw new Error("api error");
     }
     const reply = data.choices?.[0]?.message?.content ?? "No response.";
-    incrementAiUsage(msg.author.id, "chatgpt");
+    await incrementAiUsage(msg.author.id, "chatgpt");
     await typing.edit({
       embeds: [new EmbedBuilder()
         .setColor(0x00B4FF)
@@ -103,7 +103,7 @@ export const cmdLlama: Handler = async (msg, args) => {
     await msg.reply({ embeds: [err("Provide a prompt. Usage: `mewo ai llama <prompt>`")] });
     return;
   }
-  const usage = getAiUsage(msg.author.id);
+  const usage = await getAiUsage(msg.author.id);
   if (usage.llama >= AI_DAILY_LIMIT) {
     await msg.reply({ embeds: [err(`Daily limit reached (${AI_DAILY_LIMIT} requests). Resets at midnight UTC.`)] });
     return;
@@ -158,7 +158,7 @@ export const cmdLlama: Handler = async (msg, args) => {
       throw new Error("api error");
     }
     const reply = data.choices?.[0]?.message?.content ?? "No response.";
-    incrementAiUsage(msg.author.id, "llama");
+    await incrementAiUsage(msg.author.id, "llama");
     await typing.edit({
       embeds: [new EmbedBuilder()
         .setColor(0x00B4FF)
@@ -177,7 +177,7 @@ export const cmdLlama: Handler = async (msg, args) => {
 };
 
 export const cmdAiUsage: Handler = async (msg) => {
-  const usage = getAiUsage(msg.author.id);
+  const usage = await getAiUsage(msg.author.id);
   const bar = (used: number, max: number) => {
     const filled = Math.round((used / max) * 10);
     return `\`${"█".repeat(filled)}${"░".repeat(10 - filled)}\` ${used}/${max}`;
@@ -202,7 +202,7 @@ export const cmdDeepseek: Handler = async (msg, args) => {
     await msg.reply({ embeds: [err("Provide a prompt. Usage: `mewo ai deepseek <prompt>`")] });
     return;
   }
-  const usage = getAiUsage(msg.author.id);
+  const usage = await getAiUsage(msg.author.id);
   if (usage.deepseek >= AI_DAILY_LIMIT) {
     await msg.reply({ embeds: [err(`Daily limit reached (${AI_DAILY_LIMIT} requests). Resets at midnight UTC.`)] });
     return;
@@ -238,7 +238,7 @@ export const cmdDeepseek: Handler = async (msg, args) => {
       throw new Error("api error");
     }
     const reply = data.choices?.[0]?.message?.content ?? "No response.";
-    incrementAiUsage(msg.author.id, "deepseek");
+    await incrementAiUsage(msg.author.id, "deepseek");
     await typing.edit({
       embeds: [new EmbedBuilder()
         .setColor(0x4B5CC4)
@@ -610,61 +610,36 @@ export const cmdDeepGeolocate: Handler = async (msg, args) => {
   }
   const target = args[0];
   const thinking = await msg.reply({
-    embeds: [new EmbedBuilder().setColor(0x00B4FF).setDescription("🌍 Running deep geolocation analysis...")]
+    embeds: [new EmbedBuilder().setColor(0x00B4FF).setDescription("🌍 Geolocating...")]
   });
   try {
-    const [r1, r2, r3] = await Promise.allSettled([
-      fetch(`https://ipapi.co/${target}/json/`).then(r => r.json()),
-      fetch(`https://ip-api.com/json/${target}?fields=status,country,regionName,city,zip,lat,lon,timezone,isp,org,as,mobile,proxy,hosting,query`).then(r => r.json()),
-      fetch(`https://ipinfo.io/${target}/json`).then(r => r.json()),
-    ]);
-
-    const d1 = r1.status === "fulfilled" ? r1.value as Record<string, unknown> : null;
-    const d2 = r2.status === "fulfilled" ? r2.value as Record<string, unknown> : null;
-    const d3 = r3.status === "fulfilled" ? r3.value as Record<string, unknown> : null;
-
-    const pick = (...vals: unknown[]) => vals.find(v => v && String(v) !== "N/A" && String(v) !== "undefined" && String(v) !== "") ?? "N/A";
-
-    const country = pick(d1?.["country_name"], d2?.["country"],    d3?.["country"]);
-    const region  = pick(d1?.["region"],       d2?.["regionName"], d3?.["region"]);
-    const city    = pick(d1?.["city"],          d2?.["city"],       d3?.["city"]);
-    const isp     = pick(d1?.["org"],           d2?.["isp"],        d3?.["org"]);
-    const asn     = pick(d1?.["asn"],           d2?.["as"],         d3?.["org"]);
-    const tz      = pick(d1?.["timezone"],      d2?.["timezone"],   d3?.["timezone"]);
-    const lat     = pick(d1?.["latitude"],      d2?.["lat"]);
-    const lon     = pick(d1?.["longitude"],     d2?.["lon"]);
-    const postal  = pick(d1?.["postal"],        d2?.["zip"],        d3?.["postal"]);
-    const mobile  = d2?.["mobile"]  ?? "Unknown";
-    const proxy   = d2?.["proxy"]   ?? "Unknown";
-    const hosting = d2?.["hosting"] ?? "Unknown";
-
-    const mapsUrl = lat !== "N/A" && lon !== "N/A"
-      ? `[View on Map](https://www.google.com/maps?q=${lat},${lon})`
-      : "N/A";
-
+    const res = await fetch(`https://ipapi.co/${encodeURIComponent(target)}/json/`);
+    const data = await res.json() as {
+      ip?: string; city?: string; region?: string; country_name?: string;
+      org?: string; timezone?: string; latitude?: number; longitude?: number;
+      error?: boolean; reason?: string;
+    };
+    if (data.error) {
+      await thinking.edit({ embeds: [err(`Could not geolocate \`${target}\`: ${data.reason ?? "Unknown error"}.`)] });
+      return;
+    }
     await thinking.edit({
       embeds: [new EmbedBuilder()
         .setColor(0x00B4FF)
-        .setTitle(`🌍 Deep Geolocation — ${target}`)
+        .setTitle(`Geolocation — ${data.ip ?? target}`)
         .addFields(
-          { name: "Country",     value: String(country), inline: true },
-          { name: "Region",      value: String(region),  inline: true },
-          { name: "City",        value: String(city),    inline: true },
-          { name: "Postal Code", value: String(postal),  inline: true },
-          { name: "Coordinates", value: lat !== "N/A" ? `${lat}, ${lon}` : "N/A", inline: true },
-          { name: "Map",         value: mapsUrl,         inline: true },
-          { name: "ISP",         value: String(isp),     inline: false },
-          { name: "ASN",         value: String(asn),     inline: true },
-          { name: "Timezone",    value: String(tz),      inline: true },
-          { name: "Mobile",      value: String(mobile),  inline: true },
-          { name: "Proxy/VPN",   value: String(proxy),   inline: true },
-          { name: "Hosting/DC",  value: String(hosting), inline: true },
+          { name: "City", value: data.city ?? "Unknown", inline: true },
+          { name: "Region", value: data.region ?? "Unknown", inline: true },
+          { name: "Country", value: data.country_name ?? "Unknown", inline: true },
+          { name: "ISP / Org", value: data.org ?? "Unknown", inline: false },
+          { name: "Timezone", value: data.timezone ?? "Unknown", inline: true },
+          { name: "Coordinates", value: data.latitude != null ? `${data.latitude}, ${data.longitude}` : "Unknown", inline: true }
         )
-        .setFooter({ text: "mewo • ai • ipapi.co + ip-api.com + ipinfo.io" })
+        .setFooter({ text: "mewo • ai • ipapi.co" })
       ],
     });
   } catch (e) {
     console.error("[MEWO AI] deepgeolocate error:", e);
-    await thinking.edit({ embeds: [err("Something went wrong. Please try again.")] });
+    await thinking.edit({ embeds: [err("Geolocation failed. Please try again.")] });
   }
 };

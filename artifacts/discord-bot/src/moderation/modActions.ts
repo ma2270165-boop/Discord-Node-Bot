@@ -237,7 +237,7 @@ export const warningsData = new SlashCommandBuilder()
 
 export async function executeWarnings(interaction: ChatInputCommandInteraction): Promise<void> {
   const target = interaction.options.getUser("user") ?? interaction.user;
-  const warns  = getWarns(target.id, interaction.guildId ?? "");
+  const warns  = await getWarns(target.id, interaction.guildId ?? "");
 
   if (warns.length === 0) {
     await interaction.editReply({ content: `✅ **${target.tag}** has no warnings on record.` });

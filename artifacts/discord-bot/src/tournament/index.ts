@@ -130,7 +130,7 @@ export async function executeTournament(interaction: ChatInputCommandInteraction
 
   const pingRole = interaction.options.getRole("ping_role", true) as Role;
   const host = interaction.options.getUser("host", true);
-  const id = nextTournamentId();
+  const id = await nextTournamentId();
 
   const tournament: TournamentData = {
     id,
@@ -164,7 +164,7 @@ export async function executeTournament(interaction: ChatInputCommandInteraction
   });
 
   tournament.messageId = message.id;
-  saveTournament(tournament);
+  await saveTournament(tournament);
 
   await interaction.editReply({
     content: `✅ TSB tournament created: ${message.url}`,
@@ -173,7 +173,7 @@ export async function executeTournament(interaction: ChatInputCommandInteraction
 
 export async function executeCloseTournament(interaction: ChatInputCommandInteraction): Promise<void> {
   const tournamentId = interaction.options.getString("tournament_id", true).trim().toUpperCase();
-  const tournament = closeTournament(tournamentId);
+  const tournament = await closeTournament(tournamentId);
   if (!tournament) {
     await interaction.editReply({ content: `❌ Tournament **${tournamentId}** was not found.` });
     return;

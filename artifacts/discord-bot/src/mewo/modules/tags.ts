@@ -31,7 +31,7 @@ export const cmdTagCreate: Handler = async (msg, args) => {
     createdByTag: msg.author.tag,
     createdAt: new Date().toISOString(),
   };
-  const ok = createTag(msg.guildId, tag);
+  const ok = await createTag(msg.guildId, tag);
   if (!ok) {
     await msg.reply({ embeds: [err(`Tag \`${name}\` already exists. Use \`mewo tags edit ${name} <content>\` to update it.`)] });
     return;
@@ -56,7 +56,7 @@ export const cmdTagDelete: Handler = async (msg, args) => {
   }
   if (!msg.guildId) { await msg.reply({ embeds: [err("Server-only.")] }); return; }
   const name = args[0].toLowerCase();
-  const tag = getTag(msg.guildId, name);
+  const tag = await getTag(msg.guildId, name);
   if (!tag) {
     await msg.reply({ embeds: [err(`Tag \`${name}\` not found. Use \`mewo tags list\` to see all tags.`)] });
     return;
@@ -67,7 +67,7 @@ export const cmdTagDelete: Handler = async (msg, args) => {
     await msg.reply({ embeds: [err("You can only delete your own tags. Admins can delete any tag.")] });
     return;
   }
-  deleteTag(msg.guildId, name);
+  await deleteTag(msg.guildId, name);
   await msg.reply({
     embeds: [new EmbedBuilder()
       .setColor(0x57F287)
@@ -85,7 +85,7 @@ export const cmdTagEdit: Handler = async (msg, args) => {
   if (!msg.guildId) { await msg.reply({ embeds: [err("Server-only.")] }); return; }
   const name = args[0].toLowerCase();
   const content = args.slice(1).join(" ");
-  const tag = getTag(msg.guildId, name);
+  const tag = await getTag(msg.guildId, name);
   if (!tag) {
     await msg.reply({ embeds: [err(`Tag \`${name}\` not found.`)] });
     return;
@@ -96,7 +96,7 @@ export const cmdTagEdit: Handler = async (msg, args) => {
     await msg.reply({ embeds: [err("You can only edit your own tags. Admins can edit any tag.")] });
     return;
   }
-  editTag(msg.guildId, name, content);
+  await editTag(msg.guildId, name, content);
   await msg.reply({
     embeds: [new EmbedBuilder()
       .setColor(0x57F287)
@@ -112,7 +112,7 @@ export const cmdTagEdit: Handler = async (msg, args) => {
 
 export const cmdTagList: Handler = async (msg) => {
   if (!msg.guildId) { await msg.reply({ embeds: [err("Server-only.")] }); return; }
-  const tags = listTags(msg.guildId);
+  const tags = await listTags(msg.guildId);
   if (!tags.length) {
     await msg.reply({
       embeds: [new EmbedBuilder()
@@ -141,7 +141,7 @@ export const cmdTagSend: Handler = async (msg, args) => {
   }
   if (!msg.guildId) { await msg.reply({ embeds: [err("Server-only.")] }); return; }
   const name = args[0].toLowerCase();
-  const tag = getTag(msg.guildId, name);
+  const tag = await getTag(msg.guildId, name);
   if (!tag) {
     await msg.reply({ embeds: [err(`Tag \`${name}\` not found. Use \`mewo tags list\` to see all tags.`)] });
     return;

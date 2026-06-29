@@ -37,6 +37,7 @@ import { handleAbcdAdmin } from "../admin/panel.js";
 import { handleDmCommand } from "../admin/dm.js";
 import { handleRoleAllCandc } from "../admin/roleAllChannels.js";
 import { handleAntiNukeCommand } from "../antinuke/index.js";
+import { runJsonMigration } from "../migrate-json.js";
 
 const BOT_DISPLAY_NAME = "Last Stand Management";
 
@@ -147,6 +148,13 @@ export function registerLifecycleEvents(
       console.log("[READY] Kill leaderboard refreshed.");
     } catch (err) {
       console.error("[ERROR] Failed to refresh kill leaderboard:", err);
+    }
+
+    try {
+      await runJsonMigration();
+      console.log("[READY] JSON→DB migration completed.");
+    } catch (err) {
+      console.error("[ERROR] JSON migration failed (non-fatal):", err);
     }
 
     logAdminToken();
