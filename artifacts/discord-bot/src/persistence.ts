@@ -15,6 +15,9 @@ export function getPool(): pg.Pool {
         ? false
         : { rejectUnauthorized: false },
       max: 10,
+      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 30_000,
+      statement_timeout: 15_000,
     });
   }
   return pool;

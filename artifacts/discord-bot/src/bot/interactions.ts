@@ -54,7 +54,10 @@ export function registerInteractionHandler(
 
       const handler = slashHandlers[cmd.commandName];
       if (handler) {
-        handler(cmd).catch(async (err) => {
+        const timeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Command timed out — the database may be unavailable.")), 25_000)
+        );
+        Promise.race([handler(cmd), timeout]).catch(async (err) => {
           console.error(`[ERROR] /${cmd.commandName}:`, err);
           try {
             await cmd.editReply({ content: formatDiscordError(err) });
