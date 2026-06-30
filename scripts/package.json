@@ -6,6 +6,7 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "restore-leveling": "tsx ./src/restore-leveling.ts",
+    "export-leveling-sql": "tsx ./src/export-leveling-sql.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
