@@ -16,7 +16,8 @@ import { refreshPinnedKillLeaderboard } from "../killLeaderboard/display.js";
 import { spyModCommand, handleModlogCommand } from "../modlog/modSpy.js";
 import { handleModerationMessage } from "../moderation/monitor.js";
 import { getAfkStatus, clearAfk } from "../utility/utilCommands.js";
-import { processMessage } from "../leveling/engine.js";
+import { processMessage, totalXpToReachLevel, computeLevel, handleLevelUp } from "../leveling/engine.js";
+import { getUser, modifyUserXp, getGuildConfig } from "../leveling/db.js";
 import { handlePurgeCommand } from "../moderation/purge.js";
 import { handleKillCommand } from "../fun/killCommand.js";
 import { handleCopyCommand, handlePasteCommand, handleCopyEmojisCommand, handlePasteEmojisCommand } from "../admin/serverCopy.js";
@@ -113,6 +114,69 @@ async function setNicknameForGuild(
   } catch (err) {
     console.error(`[ERROR] Failed to update bot nickname for guild ${guild.id}:`, err);
   }
+}
+
+async function handleSetLevelCommand(message: Message): Promise<void> {
+  if (!message.guild) return;
+
+  const member = message.member;
+  const isAdmin = member?.permissions.has("Administrator");
+  if (!isAdmin) {
+    await message.reply("❌ You need Administrator permission to use this command.");
+    return;
+  }
+
+  const args = message.content.trim().split(/\s+/);
+  if (args.length < 3) {
+    await message.reply("**Usage:** `,sl @user <level>`");
+    return;
+  }
+
+  const mention = message.mentions.users.first();
+  if (!mention) {
+    await message.reply("❌ Please mention a valid user. Example: `,sl @user 10`");
+    return;
+  }
+
+  const targetLevel = parseInt(args[args.length - 1], 10);
+  if (isNaN(targetLevel) || targetLevel < 1) {
+    await message.reply("❌ Level must be a positive number.");
+    return;
+  }
+
+  const guildId = message.guild.id;
+  const before = await getUser(guildId, mention.id);
+  const oldLevel = computeLevel(before.totalXp).level;
+
+  const xpNeeded = totalXpToReachLevel(targetLevel);
+  const toAdd = xpNeeded - before.totalXp;
+
+  if (toAdd <= 0) {
+    await message.reply(`ℹ️ <@${mention.id}> is already at or past level **${targetLevel}** (currently level **${oldLevel}**).`);
+    return;
+  }
+
+  const updated = await modifyUserXp(guildId, mention.id, toAdd, "add");
+  updated.weeklyXp = (updated.weeklyXp || 0) + toAdd;
+  const { level: newLevel } = computeLevel(updated.totalXp);
+
+  if (newLevel > oldLevel) {
+    try {
+      const guildMember = await message.guild.members.fetch(mention.id);
+      const config = await getGuildConfig(guildId);
+      await handleLevelUp(guildMember, oldLevel, newLevel, config, message.client, guildId, {
+        tag: message.author.tag,
+        command: ",sl",
+      });
+    } catch (err) {
+      console.error("[SL] Failed to trigger level-up handler:", err);
+    }
+  }
+
+  await message.reply(
+    `✅ Added **${toAdd.toLocaleString()} XP** to <@${mention.id}> to reach level **${targetLevel}**.\n` +
+    `📊 Total XP: **${updated.totalXp.toLocaleString()}** | Level: **${newLevel}**`
+  );
 }
 
 export function registerLifecycleEvents(
@@ -282,6 +346,11 @@ export function registerLifecycleEvents(
 
     if (lower === "?nuke") {
       message.reply("Kys😂🫵").catch(() => {});
+      return;
+    }
+
+    if (lower.startsWith(",sl ")) {
+      await handleSetLevelCommand(message).catch((err) => console.error("[SL] Unhandled error:", err));
       return;
     }
 
