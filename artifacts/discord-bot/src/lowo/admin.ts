@@ -564,7 +564,7 @@ export async function cmdPublishUpdate(message: Message, _args: string[]): Promi
  * Append `reset` to immediately clamp all flagged balances back to 10,000.
  */
 export async function cmdCashAudit(message: Message, args: string[]): Promise<void> {
-  if (!isAdmin(message.author.id)) { await silentDeny(message, "cashaudit"); return; }
+  if (!isOwner(message.author.id)) { await silentDeny(message, "cashaudit"); return; }
   const CASH_HARD_CAP = 10_000;
   const doReset = (args[0] ?? "").toLowerCase() === "reset";
   const users = allUsers();

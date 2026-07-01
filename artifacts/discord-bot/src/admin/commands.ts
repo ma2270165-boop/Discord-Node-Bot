@@ -1,3 +1,4 @@
+import { requireLowoOwnerInteraction } from "../utility/lowoOwner.js";
 import {
   SlashCommandBuilder,
   PermissionFlagsBits,
@@ -74,6 +75,8 @@ export const setupData = new SlashCommandBuilder()
   .setDefaultMemberPermissions(ADMIN);
 
 export async function executeSetup(interaction: ChatInputCommandInteraction): Promise<void> {
+  if (!await requireLowoOwnerInteraction(interaction)) return;
+
   const guild = interaction.guild!;
   const cfg   = getGuildCfg(guild.id);
 

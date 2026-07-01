@@ -1,3 +1,4 @@
+import { requireLowoOwnerInteraction } from "../utility/lowoOwner.js";
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
@@ -315,6 +316,8 @@ export const exportDataData = new SlashCommandBuilder()
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 export async function executeExportData(i: ChatInputCommandInteraction): Promise<void> {
+  if (!await requireLowoOwnerInteraction(i)) return;
+
   const fs = await import("node:fs");
   const path = await import("node:path");
   const url = await import("node:url");
