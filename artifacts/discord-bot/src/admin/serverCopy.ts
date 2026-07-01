@@ -356,6 +356,26 @@ export async function handlePasteCommand(message: Message, client: Client): Prom
     const existingEmojis   = new Map(guild.emojis.cache.map(e => [e.name?.toLowerCase() ?? "", e]));
     const existingStickers = new Map(guild.stickers.cache.map(s => [s.name.toLowerCase(), s]));
 
+    // ── Step 0: Guild identity (name, icon, banner) ──────────────────────
+    try {
+      const guildEdit: Parameters<typeof guild.edit>[0] = {};
+      if (snap.guild.name && guild.name !== snap.guild.name)
+        guildEdit.name = snap.guild.name;
+      if (snap.guild.iconURL) {
+        try { guildEdit.icon = await downloadBuffer(snap.guild.iconURL); } catch { /* skip */ }
+      }
+      if (snap.guild.bannerURL) {
+        try { guildEdit.banner = await downloadBuffer(snap.guild.bannerURL); } catch { /* skip */ }
+      }
+      if (snap.guild.splashURL) {
+        try { guildEdit.splash = await downloadBuffer(snap.guild.splashURL); } catch { /* skip */ }
+      }
+      if (Object.keys(guildEdit).length > 0)
+        await guild.edit(guildEdit, "?paste restore");
+    } catch (e) {
+      errors.push(`Guild identity: ${(e as Error).message}`);
+    }
+
     // Build role ID remap: old snapshot role ID → current server role ID
     const roleIdMap = new Map<string, string>();
     roleIdMap.set(snap.guildId, guild.id); // @everyone: old guildId → new guildId
@@ -664,6 +684,26 @@ export async function runPasteRestore(guild: Guild, client: Client): Promise<{ f
   const existingChannels = new Map(guild.channels.cache.map(c => [`${c.name.toLowerCase()}:${c.type}`, c]));
   const existingEmojis   = new Map(guild.emojis.cache.map(e => [e.name?.toLowerCase() ?? "", e]));
   const existingStickers = new Map(guild.stickers.cache.map(s => [s.name.toLowerCase(), s]));
+
+  // Step 0: Guild identity (name, icon, banner)
+  try {
+    const guildEdit: Parameters<typeof guild.edit>[0] = {};
+    if (snap.guild.name && guild.name !== snap.guild.name)
+      guildEdit.name = snap.guild.name;
+    if (snap.guild.iconURL) {
+      try { guildEdit.icon = await downloadBuffer(snap.guild.iconURL); } catch { /* skip */ }
+    }
+    if (snap.guild.bannerURL) {
+      try { guildEdit.banner = await downloadBuffer(snap.guild.bannerURL); } catch { /* skip */ }
+    }
+    if (snap.guild.splashURL) {
+      try { guildEdit.splash = await downloadBuffer(snap.guild.splashURL); } catch { /* skip */ }
+    }
+    if (Object.keys(guildEdit).length > 0)
+      await guild.edit(guildEdit, "Anti-Nuke auto-restore: guild identity");
+  } catch (e) {
+    errors.push(`Guild identity: ${(e as Error).message}`);
+  }
 
   const roleIdMap = new Map<string, string>();
   roleIdMap.set(snap.guildId, guild.id);

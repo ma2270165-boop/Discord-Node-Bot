@@ -139,7 +139,7 @@ export async function quarantine(
     try {
       const owner = await guild.fetchOwner();
       await owner.send({
-        content: `heads up — someone just got caught trying something in **${guild.name}**`,
+        content: `some random ass nigga got caught in **${guild.name}**`,
         embeds: [embed],
       });
     } catch { /* DMs closed */ }
