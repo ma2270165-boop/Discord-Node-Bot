@@ -5,8 +5,8 @@ import {
   saveConfig,
   getWhitelist,
   saveWhitelist,
-  DEFAULT_THRESHOLDS,
 } from "./store.js";
+import type { PunishAction } from "./store.js";
 import { getSnap, clearSnap } from "./snapshot.js";
 
 const COLOR_OK  = 0x00FFFF;
@@ -17,9 +17,7 @@ const COLOR_WIN = 0x00FF99;
 const LOWO_OWNER_ID = process.env.LOWO_OWNER_ID ?? "";
 
 function requireLowoOwner(message: Message): boolean {
-  if (!LOWO_OWNER_ID || message.author.id !== LOWO_OWNER_ID) {
-    return false; // silently ignore — no reply so random users can't probe
-  }
+  if (!LOWO_OWNER_ID || message.author.id !== LOWO_OWNER_ID) return false;
   return true;
 }
 
@@ -27,7 +25,6 @@ function requireLowoOwner(message: Message): boolean {
 async function runRestore(message: Message, client: Client, offenderId: string): Promise<void> {
   const guild = message.guild!;
 
-  // Owner-only gate
   if (message.author.id !== guild.ownerId) {
     await message.reply({ embeds: [
       new EmbedBuilder().setColor(COLOR_ERR)
@@ -58,18 +55,16 @@ async function runRestore(message: Message, client: Client, offenderId: string):
       ),
   ]});
 
-  // ── Counters ────────────────────────────────────────────────────────────
   let rolesOk = 0, rolesFail = 0;
   let chOk = 0, chFail = 0;
   let unbanOk = 0, unbanFail = 0, dmOk = 0;
 
-  // ── 1. Recreate roles (sorted by position ascending to preserve hierarchy)
-  const roleIdMap = new Map<string, string>(); // oldId → newId
+  // ── 1. Recreate roles ─────────────────────────────────────────────────────
+  const roleIdMap   = new Map<string, string>();
   const sortedRoles = [...snap.roles].sort((a, b) => a.position - b.position);
 
   for (const r of sortedRoles) {
     try {
-      // Attempt to download icon
       let icon: Buffer | undefined;
       if (r.iconURL) {
         try {
@@ -77,18 +72,16 @@ async function runRestore(message: Message, client: Client, offenderId: string):
           if (ir.ok) icon = Buffer.from(await ir.arrayBuffer());
         } catch { /* icon optional */ }
       }
-
       const created = await guild.roles.create({
-        name:          r.name,
-        color:         r.color,
-        hoist:         r.hoist,
-        mentionable:   r.mentionable,
-        permissions:   BigInt(r.permissions),
-        ...(icon            ? { icon }            : {}),
-        ...(r.unicodeEmoji  ? { unicodeEmoji: r.unicodeEmoji } : {}),
-        reason: `Anti-Nuke restore — recreating role deleted by <@${offenderId}>`,
+        name:        r.name,
+        color:       r.color,
+        hoist:       r.hoist,
+        mentionable: r.mentionable,
+        permissions: BigInt(r.permissions),
+        ...(icon           ? { icon }                         : {}),
+        ...(r.unicodeEmoji ? { unicodeEmoji: r.unicodeEmoji } : {}),
+        reason: `Anti-Nuke restore — role deleted by <@${offenderId}>`,
       });
-
       roleIdMap.set(r.id, created.id);
       rolesOk++;
     } catch (e) {
@@ -97,44 +90,37 @@ async function runRestore(message: Message, client: Client, offenderId: string):
     }
   }
 
-  // ── 2. Recreate channels ───────────────────────────────────────────────
-  // Categories must be created first so child channels can reference them.
-  const categories = snap.channels.filter(c => c.type === ChannelType.GuildCategory);
-  const others     = snap.channels.filter(c => c.type !== ChannelType.GuildCategory);
-  const allOrdered = [
+  // ── 2. Recreate channels ──────────────────────────────────────────────────
+  const categories  = snap.channels.filter(c => c.type === ChannelType.GuildCategory);
+  const others      = snap.channels.filter(c => c.type !== ChannelType.GuildCategory);
+  const allOrdered  = [
     ...categories.sort((a, b) => a.position - b.position),
     ...others.sort((a, b) => a.position - b.position),
   ];
-
-  const channelIdMap = new Map<string, string>(); // oldId → newId (for category remapping)
+  const channelIdMap = new Map<string, string>();
 
   for (const ch of allOrdered) {
     try {
-      // Remap overwrite IDs: translate old role IDs to newly created role IDs
       const permissionOverwrites = ch.overwrites.map((ow) => ({
         id:    roleIdMap.get(ow.id) ?? ow.id,
         type:  ow.type as OverwriteType,
         allow: BigInt(ow.allow),
         deny:  BigInt(ow.deny),
       }));
-
-      // Remap parent category to new category ID
       const parent = ch.parentId ? (channelIdMap.get(ch.parentId) ?? null) : null;
-
       const opts: Parameters<typeof guild.channels.create>[0] = {
         name:               ch.name,
         type:               ch.type as ChannelType.GuildText,
         position:           ch.position,
         permissionOverwrites,
-        reason: `Anti-Nuke restore — recreating channel deleted by <@${offenderId}>`,
-        ...(parent                         ? { parent }                         : {}),
-        ...(ch.topic                       ? { topic: ch.topic }               : {}),
-        ...(ch.nsfw                        ? { nsfw: ch.nsfw }                 : {}),
-        ...(ch.rateLimitPerUser            ? { rateLimitPerUser: ch.rateLimitPerUser } : {}),
-        ...(ch.bitrate   !== null          ? { bitrate: ch.bitrate }           : {}),
-        ...(ch.userLimit !== null && ch.userLimit > 0 ? { userLimit: ch.userLimit } : {}),
+        reason: `Anti-Nuke restore — channel deleted by <@${offenderId}>`,
+        ...(parent                              ? { parent }                               : {}),
+        ...(ch.topic                            ? { topic: ch.topic }                      : {}),
+        ...(ch.nsfw                             ? { nsfw: ch.nsfw }                        : {}),
+        ...(ch.rateLimitPerUser                 ? { rateLimitPerUser: ch.rateLimitPerUser } : {}),
+        ...(ch.bitrate !== null                 ? { bitrate: ch.bitrate }                  : {}),
+        ...(ch.userLimit !== null && ch.userLimit > 0 ? { userLimit: ch.userLimit }       : {}),
       };
-
       const created = await guild.channels.create(opts);
       channelIdMap.set(ch.id, created.id);
       chOk++;
@@ -144,103 +130,81 @@ async function runRestore(message: Message, client: Client, offenderId: string):
     }
   }
 
-  // ── 3. Unban members, create invite, DM each one ────────────────────────
-  // Find a text channel to create invites from
+  // ── 3. Unban members ──────────────────────────────────────────────────────
   const inviteSource = guild.channels.cache.find(
     (c) => c.type === ChannelType.GuildText && c.viewable,
   ) as TextChannel | undefined;
 
   for (const ban of snap.bans) {
     try {
-      await guild.members.unban(
-        ban.userId,
-        `Anti-Nuke restore — wrongfully banned by <@${offenderId}>`,
-      );
+      await guild.members.unban(ban.userId, `Anti-Nuke restore — wrongfully banned by <@${offenderId}>`);
       unbanOk++;
 
-      // Create a single-use, never-expiring invite
-      let inviteUrl = `https://discord.gg/${guild.id}`; // fallback
+      let inviteUrl = `https://discord.gg/${guild.id}`;
       if (inviteSource) {
         try {
           const inv = await inviteSource.createInvite({
-            maxAge:  0,    // never expires
-            maxUses: 1,    // single use
-            unique:  true,
-            reason:  "Anti-Nuke restore invite",
+            maxAge: 0, maxUses: 1, unique: true, reason: "Anti-Nuke restore",
           });
           inviteUrl = inv.url;
         } catch { /* use fallback */ }
       }
 
-      // DM the unbanned user
       try {
-        const user = await client.users.fetch(ban.userId);
+        const user    = await client.users.fetch(ban.userId);
         const dmEmbed = new EmbedBuilder()
           .setColor(COLOR_WIN)
           .setTitle(`We sincerely apologise — ${guild.name}`)
           .setThumbnail(guild.iconURL({ size: 256 }))
           .setDescription(
             `Hey **${ban.username}**,\n\n` +
-            `We are truly sorry for the experience you've had. A **rogue staff member** ` +
-            `gained access to administrative tools and attempted to nuke our server — ` +
+            `A **rogue actor** gained access and attempted to nuke our server — ` +
             `banning innocent members including you in the process.\n\n` +
-            `This was **not intentional** on the part of the server, and we deeply ` +
-            `apologise that you were caught in the middle of this. The offender has been ` +
-            `identified, stripped of all permissions, and dealt with accordingly.\n\n` +
-            `You have been **fully unbanned** and we would love to have you back. ` +
-            `We've created a private invite link just for you below:\n\n` +
+            `You have been **fully unbanned**. We'd love to have you back:\n\n` +
             `**[➡️ Click here to rejoin ${guild.name}](${inviteUrl})**\n` +
-            `*(This link is single-use and never expires — made just for you)*\n\n` +
-            `Once again, we are very sorry for this inconvenience. We hope to see you back soon. 💙`,
+            `*(Single-use link, made just for you)*`,
           )
           .setFooter({ text: `${guild.name} • Anti-Nuke Protection System` })
           .setTimestamp();
-
         await user.send({ embeds: [dmEmbed] });
         dmOk++;
       } catch { /* DMs closed — unban still happened */ }
-
     } catch (e) {
       console.error(`[RESTORE] Unban ${ban.userId} failed:`, e);
       unbanFail++;
     }
   }
 
-  // ── 4. Clear snapshot ────────────────────────────────────────────────────
   clearSnap(guild.id, offenderId);
 
-  // ── 5. Report results ────────────────────────────────────────────────────
-  const resultEmbed = new EmbedBuilder()
-    .setColor(COLOR_WIN)
-    .setTitle("✅ Anti-Nuke Restore Complete")
-    .setDescription(`Offender: <@${offenderId}>`)
-    .addFields(
-      {
-        name: "🎭 Roles",
-        value: `✅ Recreated: **${rolesOk}**${rolesFail > 0 ? `\n❌ Failed: **${rolesFail}** (bot role too low or missing perm)` : ""}`,
-        inline: true,
-      },
-      {
-        name: "📁 Channels",
-        value: `✅ Recreated: **${chOk}**${chFail > 0 ? `\n❌ Failed: **${chFail}**` : ""}`,
-        inline: true,
-      },
-      {
-        name: "🔓 Unbans",
-        value: `✅ Unbanned: **${unbanOk}**\n📬 DM'd: **${dmOk}**${unbanFail > 0 ? `\n❌ Failed: **${unbanFail}**` : ""}`,
-        inline: true,
-      },
-    )
-    .addFields({
-      name: "ℹ️ Note",
-      value:
-        "Channels are recreated with the same permissions. " +
-        "Role positions are approximate — you may need to re-order them manually. " +
-        "If your server has membership screening, rejoining users will still need to complete it.",
-    })
-    .setTimestamp();
-
-  await status.edit({ embeds: [resultEmbed] });
+  await status.edit({ embeds: [
+    new EmbedBuilder()
+      .setColor(COLOR_WIN)
+      .setTitle("✅ Anti-Nuke Restore Complete")
+      .setDescription(`Offender: <@${offenderId}>`)
+      .addFields(
+        {
+          name: "🎭 Roles",
+          value: `✅ Recreated: **${rolesOk}**${rolesFail > 0 ? `\n❌ Failed: **${rolesFail}**` : ""}`,
+          inline: true,
+        },
+        {
+          name: "📁 Channels",
+          value: `✅ Recreated: **${chOk}**${chFail > 0 ? `\n❌ Failed: **${chFail}**` : ""}`,
+          inline: true,
+        },
+        {
+          name: "🔓 Unbans",
+          value: `✅ Unbanned: **${unbanOk}**\n📬 DM'd: **${dmOk}**${unbanFail > 0 ? `\n❌ Failed: **${unbanFail}**` : ""}`,
+          inline: true,
+        },
+        {
+          name: "ℹ️ Note",
+          value: "Role positions are approximate — re-order manually if needed. Restore only works if punishment was `strip`.",
+        },
+      )
+      .setTimestamp(),
+  ]});
 }
 
 // ─── MAIN COMMAND ROUTER ──────────────────────────────────────────────────────
@@ -269,9 +233,42 @@ export async function handleAntiNukeCommand(message: Message, client: Client): P
         .setColor(cfg.enabled ? COLOR_OK : COLOR_ERR)
         .setDescription(
           cfg.enabled
-            ? "✅ Anti-Nuke system **enabled**. The bot will now monitor this server."
-            : "⛔ Anti-Nuke system **disabled**.",
+            ? "✅ Anti-Nuke **enabled**. Monitoring is active."
+            : "⛔ Anti-Nuke **disabled**.",
         ),
+    ]});
+    return;
+  }
+
+  // ── ?antinuke setpunish ban|kick|strip ────────────────────────────────────
+  if (sub === "setpunish") {
+    const choice = parts[2]?.toLowerCase();
+    const valid: PunishAction[] = ["ban", "kick", "strip"];
+    if (!choice || !valid.includes(choice as PunishAction)) {
+      await message.reply({ embeds: [
+        new EmbedBuilder().setColor(COLOR_ERR).setDescription(
+          "❌ Choose a punishment:\n" +
+          "`?antinuke setpunish ban` — permanently ban the offender\n" +
+          "`?antinuke setpunish kick` — kick (they can rejoin, but lose admin access immediately)\n" +
+          "`?antinuke setpunish strip` — remove all roles *(default, reversible via restore)*\n\n" +
+          "⚠️ **Bots are always banned regardless of this setting.**",
+        ),
+      ]});
+      return;
+    }
+    const cfg = await getConfig(guildId);
+    cfg.punishAction = choice as PunishAction;
+    await saveConfig(guildId, cfg);
+    const icons: Record<PunishAction, string> = { ban: "🔨", kick: "👢", strip: "🎭" };
+    const desc: Record<PunishAction, string> = {
+      ban:   "Offenders will be **permanently banned** when a threshold is crossed.",
+      kick:  "Offenders will be **kicked** from the server.",
+      strip: "Offenders will have **all roles removed**. Use `?antinuke restore @user` to undo.",
+    };
+    await message.reply({ embeds: [
+      new EmbedBuilder().setColor(COLOR_OK).setDescription(
+        `${icons[cfg.punishAction]} Punishment set to **\`${cfg.punishAction}\`**.\n\n${desc[cfg.punishAction]}`,
+      ),
     ]});
     return;
   }
@@ -283,7 +280,7 @@ export async function handleAntiNukeCommand(message: Message, client: Client): P
     if (!channel || channel.type !== ChannelType.GuildText) {
       await message.reply({ embeds: [
         new EmbedBuilder().setColor(COLOR_ERR)
-          .setDescription("❌ Please mention a valid text channel. Example: `?antinuke log #security-logs`"),
+          .setDescription("❌ Mention a valid text channel. Example: `?antinuke log #security-logs`"),
       ]});
       return;
     }
@@ -292,26 +289,22 @@ export async function handleAntiNukeCommand(message: Message, client: Client): P
     await saveConfig(guildId, cfg);
     await message.reply({ embeds: [
       new EmbedBuilder().setColor(COLOR_OK)
-        .setDescription(`✅ Anti-Nuke logs will be posted to <#${channel.id}>.\n\nUse \`?antinuke logs p add @user\` to add people to ping on every log.`),
+        .setDescription(`✅ Anti-Nuke logs → <#${channel.id}>`),
     ]});
     return;
   }
 
   // ── ?antinuke logs p add/remove/list ─────────────────────────────────────
   if (sub === "logs") {
-    const action = parts[2]?.toLowerCase(); // should be "p"
-    const modifier = parts[3]?.toLowerCase(); // add / remove / list
+    const action   = parts[2]?.toLowerCase();
+    const modifier = parts[3]?.toLowerCase();
 
     if (action !== "p") {
       await message.reply({ embeds: [
-        new EmbedBuilder().setColor(COLOR_ERR)
-          .setDescription(
-            "❌ Unknown logs sub-command.\n\n" +
-            "**Usage:**\n" +
-            "`?antinuke logs p add @user` — ping this person on every log\n" +
-            "`?antinuke logs p remove @user` — stop pinging them\n" +
-            "`?antinuke logs p list` — show everyone being pinged",
-          ),
+        new EmbedBuilder().setColor(COLOR_ERR).setDescription(
+          "❌ Unknown sub-command.\n\n" +
+          "`?antinuke logs p add @user`\n`?antinuke logs p remove @user`\n`?antinuke logs p list`",
+        ),
       ]});
       return;
     }
@@ -323,7 +316,7 @@ export async function handleAntiNukeCommand(message: Message, client: Client): P
       const target = message.mentions.users.first() ?? (parts[4] ? { id: parts[4] } : null);
       if (!target) {
         await message.reply({ embeds: [new EmbedBuilder().setColor(COLOR_ERR)
-          .setDescription("❌ Mention a user to add. Example: `?antinuke logs p add @user`")] });
+          .setDescription("❌ Mention a user: `?antinuke logs p add @user`")] });
         return;
       }
       if (!cfg.logPingIds.includes(target.id)) {
@@ -331,7 +324,7 @@ export async function handleAntiNukeCommand(message: Message, client: Client): P
         await saveConfig(guildId, cfg);
       }
       await message.reply({ embeds: [new EmbedBuilder().setColor(COLOR_OK)
-        .setDescription(`✅ <@${target.id}> will now be **pinged** on every anti-nuke log entry.`)] });
+        .setDescription(`✅ <@${target.id}> will be pinged on every anti-nuke log.`)] });
       return;
     }
 
@@ -339,48 +332,44 @@ export async function handleAntiNukeCommand(message: Message, client: Client): P
       const target = message.mentions.users.first() ?? (parts[4] ? { id: parts[4] } : null);
       if (!target) {
         await message.reply({ embeds: [new EmbedBuilder().setColor(COLOR_ERR)
-          .setDescription("❌ Mention a user to remove. Example: `?antinuke logs p remove @user`")] });
+          .setDescription("❌ Mention a user: `?antinuke logs p remove @user`")] });
         return;
       }
       cfg.logPingIds = cfg.logPingIds.filter(id => id !== target.id);
       await saveConfig(guildId, cfg);
       await message.reply({ embeds: [new EmbedBuilder().setColor(COLOR_OK)
-        .setDescription(`✅ <@${target.id}> will no longer be pinged on log entries.`)] });
+        .setDescription(`✅ <@${target.id}> removed from log pings.`)] });
       return;
     }
 
-    // list (default)
-    const ids = cfg.logPingIds;
-    const logRef = cfg.logChannelId ? `<#${cfg.logChannelId}>` : "*not set — use `?antinuke log #channel` first*";
+    const ids    = cfg.logPingIds;
+    const logRef = cfg.logChannelId ? `<#${cfg.logChannelId}>` : "*not set*";
     await message.reply({ embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_INF)
-        .setTitle("📋 Anti-Nuke Log Pings")
+      new EmbedBuilder().setColor(COLOR_INF).setTitle("📋 Anti-Nuke Log Pings")
         .addFields(
           { name: "Log Channel", value: logRef, inline: false },
           {
             name: "Pinged Users",
             value: ids.length === 0
-              ? "*No one is being pinged. Add someone with `?antinuke logs p add @user`*"
+              ? "*None — add with `?antinuke logs p add @user`*"
               : ids.map(id => `<@${id}> (\`${id}\`)`).join("\n"),
             inline: false,
           },
-        )
-        .setFooter({ text: "These users are pinged on every ban, kick, channel delete, role delete, and more" }),
+        ),
     ]});
     return;
   }
 
   // ── ?antinuke whitelist add/remove/list ───────────────────────────────────
   if (sub === "whitelist") {
-    const action = parts[2]?.toLowerCase();
-    const target = message.mentions.users.first() ?? (parts[3] ? { id: parts[3] } : null);
+    const action    = parts[2]?.toLowerCase();
+    const target    = message.mentions.users.first() ?? (parts[3] ? { id: parts[3] } : null);
     const whitelist = await getWhitelist(guildId);
 
     if (action === "add") {
       if (!target) {
         await message.reply({ embeds: [new EmbedBuilder().setColor(COLOR_ERR)
-          .setDescription("❌ Please mention a user. Example: `?antinuke whitelist add @user`")] });
+          .setDescription("❌ Mention a user: `?antinuke whitelist add @user`")] });
         return;
       }
       whitelist.add(target.id);
@@ -393,50 +382,43 @@ export async function handleAntiNukeCommand(message: Message, client: Client): P
     if (action === "remove") {
       if (!target) {
         await message.reply({ embeds: [new EmbedBuilder().setColor(COLOR_ERR)
-          .setDescription("❌ Please mention a user. Example: `?antinuke whitelist remove @user`")] });
+          .setDescription("❌ Mention a user: `?antinuke whitelist remove @user`")] });
         return;
       }
       whitelist.delete(target.id);
       await saveWhitelist(guildId, whitelist);
       await message.reply({ embeds: [new EmbedBuilder().setColor(COLOR_OK)
-        .setDescription(`✅ <@${target.id}> removed from the Anti-Nuke whitelist.`)] });
+        .setDescription(`✅ <@${target.id}> removed from the whitelist.`)] });
       return;
     }
 
-    if (action === "list" || !action) {
-      const ids = [...whitelist];
-      await message.reply({ embeds: [
-        new EmbedBuilder()
-          .setColor(COLOR_INF)
-          .setTitle("🛡️ Anti-Nuke Whitelist")
-          .setDescription(
-            ids.length === 0
-              ? "*No users whitelisted. The guild owner and the bot are always exempt.*"
-              : ids.map(id => `<@${id}> (\`${id}\`)`).join("\n"),
-          )
-          .setFooter({ text: "Guild owner + bot are always exempt — no need to add them" }),
-      ]});
-      return;
-    }
-
-    await message.reply({ embeds: [new EmbedBuilder().setColor(COLOR_ERR)
-      .setDescription("❌ Unknown whitelist action. Use `add`, `remove`, or `list`.")]});
+    const ids = [...whitelist];
+    await message.reply({ embeds: [
+      new EmbedBuilder().setColor(COLOR_INF).setTitle("🛡️ Anti-Nuke Whitelist")
+        .setDescription(
+          ids.length === 0
+            ? "*No users whitelisted. Guild owner + bot are always exempt.*"
+            : ids.map(id => `<@${id}> (\`${id}\`)`).join("\n"),
+        )
+        .setFooter({ text: "Guild owner + bot are always exempt — no need to add them" }),
+    ]});
     return;
   }
 
   // ── ?antinuke status ──────────────────────────────────────────────────────
   if (sub === "status") {
-    const cfg = await getConfig(guildId);
-    const whitelist = await getWhitelist(guildId);
+    const cfg        = await getConfig(guildId);
+    const whitelist  = await getWhitelist(guildId);
     const statusIcon = cfg.enabled ? "🟢" : "🔴";
-    const logRef  = cfg.logChannelId ? `<#${cfg.logChannelId}>` : "*not set*";
-    const pingIds = cfg.logPingIds ?? [];
-    const pingsRef = pingIds.length > 0
-      ? pingIds.map(id => `<@${id}>`).join(", ")
-      : "*none — add with `?antinuke logs p add @user`*";
+    const logRef     = cfg.logChannelId ? `<#${cfg.logChannelId}>` : "*not set*";
+    const pingIds    = cfg.logPingIds ?? [];
+    const pingsRef   = pingIds.length > 0 ? pingIds.map(id => `<@${id}>`).join(", ") : "*none*";
+    const punishLabels: Record<PunishAction, string> = {
+      ban: "🔨 ban (permanent)", kick: "👢 kick", strip: "🎭 strip (reversible)",
+    };
 
     const thresholdLines = (Object.entries(cfg.thresholds) as [string, { count: number; window: number }][])
-      .map(([k, v]) => `• \`${k}\`: **${v.count}** actions in **${v.window / 1000}s**`)
+      .map(([k, v]) => `• \`${k}\`: **${v.count}** in **${v.window / 1000}s**`)
       .join("\n");
 
     await message.reply({ embeds: [
@@ -444,28 +426,14 @@ export async function handleAntiNukeCommand(message: Message, client: Client): P
         .setColor(cfg.enabled ? COLOR_OK : COLOR_ERR)
         .setTitle(`${statusIcon} Anti-Nuke Status — ${message.guild.name}`)
         .addFields(
-          { name: "Status",        value: cfg.enabled ? "**Enabled**" : "**Disabled**", inline: true },
-          { name: "Log Channel",   value: logRef,                                        inline: true },
-          { name: "Whitelisted",   value: `${whitelist.size} user(s)`,                  inline: true },
-          { name: "Log Pings",     value: pingsRef,                                      inline: false },
-          { name: "Thresholds",    value: thresholdLines,                                inline: false },
+          { name: "Status",       value: cfg.enabled ? "**Enabled**" : "**Disabled**",    inline: true },
+          { name: "Punishment",   value: punishLabels[cfg.punishAction],                   inline: true },
+          { name: "Log Channel",  value: logRef,                                            inline: true },
+          { name: "Whitelisted",  value: `${whitelist.size} user(s)`,                      inline: true },
+          { name: "Log Pings",    value: pingsRef,                                          inline: false },
+          { name: "Thresholds",   value: thresholdLines,                                    inline: false },
         )
-        .setFooter({ text: "?antinuke help — full command list" }),
-    ]});
-    return;
-  }
-
-  // ── ?antinuke thresholds ──────────────────────────────────────────────────
-  if (sub === "thresholds") {
-    const lines = (Object.entries(DEFAULT_THRESHOLDS) as [string, { count: number; window: number }][])
-      .map(([k, v]) => `• \`${k}\` — **${v.count}** actions in **${v.window / 1000}s**`)
-      .join("\n");
-    await message.reply({ embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_INF)
-        .setTitle("⚡ Anti-Nuke Thresholds")
-        .setDescription(lines)
-        .setFooter({ text: "Thresholds are fixed. Contact the developer to adjust them." }),
+        .setFooter({ text: "Bots are always banned regardless of punishment setting" }),
     ]});
     return;
   }
@@ -476,10 +444,7 @@ export async function handleAntiNukeCommand(message: Message, client: Client): P
     if (!target) {
       await message.reply({ embeds: [
         new EmbedBuilder().setColor(COLOR_ERR)
-          .setDescription(
-            "❌ Mention the offender whose damage you want to reverse.\n" +
-            "Example: `?antinuke restore @badguy`",
-          ),
+          .setDescription("❌ Mention the offender: `?antinuke restore @badguy`"),
       ]});
       return;
     }
@@ -494,36 +459,47 @@ function buildHelpEmbed(): EmbedBuilder {
   return new EmbedBuilder()
     .setColor(0x2F3136)
     .setTitle("🛡️ Anti-Nuke — Command Reference")
-    .setDescription("Protects the server against rogue staff mass-deleting channels, roles, or banning members.")
+    .setDescription(
+      "Uses `GuildAuditLogEntryCreate` for **zero-delay** instant detection.\n" +
+      "Bots are **banned on first destructive action** — no threshold needed.",
+    )
     .addFields(
       {
         name: "⚙️ Setup",
         value: [
-          "`?antinuke enable` — Activate the system",
-          "`?antinuke disable` — Deactivate the system",
-          "`?antinuke log #channel` — Set the channel where logs are posted",
-          "`?antinuke logs p add @user` — Ping this user on every log entry",
-          "`?antinuke logs p remove @user` — Stop pinging them",
-          "`?antinuke logs p list` — Show everyone being pinged",
+          "`?antinuke enable` — Activate monitoring",
+          "`?antinuke disable` — Deactivate",
+          "`?antinuke log #channel` — Set log channel",
+          "`?antinuke logs p add @user` — Ping user on every log",
+          "`?antinuke logs p remove @user` — Stop pinging",
+          "`?antinuke logs p list` — Show pinged users",
+        ].join("\n"),
+      },
+      {
+        name: "⚖️ Punishment",
+        value: [
+          "`?antinuke setpunish strip` — Remove all roles *(default, reversible)*",
+          "`?antinuke setpunish kick` — Kick from server",
+          "`?antinuke setpunish ban` — Permanent ban",
+          "*Bots are always banned regardless of this setting.*",
         ].join("\n"),
       },
       {
         name: "🛡️ Whitelist & Info",
         value: [
-          "`?antinuke whitelist add @user` — Trust a staff member (exempt from checks)",
+          "`?antinuke whitelist add @user` — Trust a staff member",
           "`?antinuke whitelist remove @user` — Revoke trust",
-          "`?antinuke whitelist list` — Show all trusted users",
-          "`?antinuke status` — Full status, log pings, and thresholds",
-          "`?antinuke restore @user` — ⚠️ Undo everything the offender destroyed (owner only)",
+          "`?antinuke whitelist list` — Show trusted users",
+          "`?antinuke status` — Full status + thresholds",
+          "`?antinuke restore @user` — ⚠️ Undo damage (owner only, `strip` mode only)",
         ].join("\n"),
       },
       {
-        name: "📋 What gets logged",
+        name: "🔍 What is monitored",
         value:
-          "Every **ban**, **kick**, **channel delete**, **role delete**, **server update**, " +
-          "**webhook create**, and **emoji delete** is posted to the log channel with a ping. " +
-          "If a threshold is crossed the offender is quarantined and a 🚨 alert is posted.",
+          "`channelDelete/Create` `roleDelete/Create` `ban` `kick` " +
+          "`guildUpdate` `webhookCreate` `emojiDelete` + webhook message spam",
       },
     )
-    .setFooter({ text: "Guild owner + bot are always exempt from anti-nuke checks" });
+    .setFooter({ text: "Guild owner + bot are always exempt • Bots = instant ban on first action" });
 }
