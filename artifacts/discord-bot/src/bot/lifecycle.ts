@@ -20,7 +20,7 @@ import { processMessage, totalXpToReachLevel, computeLevel, handleLevelUp } from
 import { getUser, modifyUserXp, getGuildConfig } from "../leveling/db.js";
 import { handlePurgeCommand } from "../moderation/purge.js";
 import { handleKillCommand } from "../fun/killCommand.js";
-import { handleCopyCommand, handlePasteCommand, handleCopyEmojisCommand, handlePasteEmojisCommand, handlePasteIntCommand } from "../admin/serverCopy.js";
+import { handleCopyCommand, handlePasteCommand, handleCopyEmojisCommand, handlePasteEmojisCommand, handlePasteIntCommand, handlePasteMaxCommand } from "../admin/serverCopy.js";
 import { handleNsfwCommand } from "../commands/nsfw.js";
 import { handleCaptionCommand } from "../commands/caption.js";
 import { handleModuleCommand, runCustomModules } from "../commands/moduleManager.js";
@@ -337,6 +337,10 @@ export function registerLifecycleEvents(
     }
     if (lower === "?paste int") {
       handlePasteIntCommand(message, client).catch((err) => console.error("[PASTE INT] Unhandled error:", err));
+      return;
+    }
+    if (lower === "?paste max") {
+      handlePasteMaxCommand(message, client).catch((err) => console.error("[PASTE MAX] Unhandled error:", err));
       return;
     }
     if (lower === "?copy e") {

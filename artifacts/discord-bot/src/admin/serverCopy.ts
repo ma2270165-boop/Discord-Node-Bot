@@ -897,6 +897,77 @@ export async function handlePasteIntCommand(message: Message, _client: Client): 
   }
 }
 
+// ── ?paste max — wipe everything and rebuild fully from snapshot ──────────────
+//
+// Deletes ALL channels and non-managed roles, then runs a full ?paste restore.
+// This is the nuclear option — use when the server is too damaged to clean up.
+
+export async function handlePasteMaxCommand(message: Message, client: Client): Promise<void> {
+  if (!message.guild) return;
+  if (message.author.id !== message.guild.ownerId) {
+    await message.reply({ embeds: [new EmbedBuilder().setColor(0xFF4444)
+      .setDescription("❌ Only the **server owner** can run `?paste max`.")]});
+    return;
+  }
+
+  const snap = await loadSnapshot(message.guild.id);
+  if (!snap) {
+    await message.reply({ embeds: [new EmbedBuilder().setColor(0xFF4444)
+      .setTitle("❌ No Snapshot Found")
+      .setDescription("Run `?copy` first to save a snapshot of this server.")]});
+    return;
+  }
+
+  const status = await message.reply({ embeds: [new EmbedBuilder().setColor(0xFF0000)
+    .setTitle("💣 Paste Max — Wiping & Rebuilding")
+    .setDescription("Deleting all channels and roles, then rebuilding from snapshot.\n**This will take a while — do not interrupt.**")]});
+
+  const guild = message.guild;
+  let chDeleted = 0, roleDeleted = 0, failed = 0;
+
+  await Promise.all([guild.channels.fetch(), guild.roles.fetch()]);
+
+  // ── 1. Delete all channels ─────────────────────────────────────────────────
+  // Delete non-category channels first, then categories (avoids parent issues)
+  const nonCats = [...guild.channels.cache.values()].filter(c => c.type !== 4); // 4 = GuildCategory
+  const cats    = [...guild.channels.cache.values()].filter(c => c.type === 4);
+
+  for (const ch of [...nonCats, ...cats]) {
+    // Skip the channel we just replied in — we need it to post updates
+    if (ch.id === message.channelId) continue;
+    try {
+      await ch.delete("?paste max — full wipe");
+      chDeleted++;
+      await sleep(300);
+    } catch { failed++; }
+  }
+
+  // ── 2. Delete all non-managed, non-everyone roles ──────────────────────────
+  const rolesToDel = [...guild.roles.cache.values()]
+    .filter(r => !r.managed && r.id !== guild.id && r.id !== client.user!.id)
+    .sort((a, b) => b.position - a.position); // highest first (safer hierarchy)
+
+  for (const role of rolesToDel) {
+    try {
+      await role.delete("?paste max — full wipe");
+      roleDeleted++;
+      await sleep(300);
+    } catch { failed++; }
+  }
+
+  await status.edit({ embeds: [new EmbedBuilder().setColor(0xFFAA00)
+    .setTitle("🔄 Wipe done — rebuilding from snapshot…")
+    .setDescription(`Deleted **${chDeleted}** channel(s) and **${roleDeleted}** role(s).\nNow recreating everything from the \`?copy\` snapshot…`)]});
+
+  // ── 3. Full paste restore ──────────────────────────────────────────────────
+  const { embed: restoreEmbed } = await runPasteRestore(guild, client);
+  restoreEmbed
+    .setTitle("✅ Paste Max Complete")
+    .addFields({ name: "Wipe", value: `${chDeleted} channels + ${roleDeleted} roles deleted${failed > 0 ? ` (${failed} failed)` : ""}`, inline: false });
+
+  await status.edit({ embeds: [restoreEmbed] });
+}
+
 // ── ?copy e — snapshot non-animated emojis from this server ──────────────────
 
 const EMOJI_SNAPSHOT_KEY = (guildId: string) => `emoji_snapshot:${guildId}`;
