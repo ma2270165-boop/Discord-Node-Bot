@@ -26,15 +26,21 @@ const QUARANTINE_CHANNEL_NAME = "quarantine-chat";
 interface QuarantineStore {
   // guildId -> userId -> array of role IDs that were removed
   guilds: Record<string, Record<string, string[]>>;
+  // guildId -> { userIds: string[], roleIds: string[] }
+  whitelist: Record<string, { userIds: string[]; roleIds: string[] }>;
 }
 
 function readStore(): QuarantineStore {
   try {
     if (existsSync(STORE_FILE)) {
-      return JSON.parse(readFileSync(STORE_FILE, "utf-8")) as QuarantineStore;
+      const parsed = JSON.parse(readFileSync(STORE_FILE, "utf-8")) as Partial<QuarantineStore>;
+      return {
+        guilds: parsed.guilds ?? {},
+        whitelist: parsed.whitelist ?? {},
+      };
     }
   } catch { /* ignore */ }
-  return { guilds: {} };
+  return { guilds: {}, whitelist: {} };
 }
 
 function writeStore(store: QuarantineStore): void {
@@ -62,10 +68,50 @@ function clearRoles(guildId: string, userId: string): void {
   }
 }
 
+// ─── Whitelist helpers ────────────────────────────────────────────────────────
+
+function getWhitelist(guildId: string): { userIds: string[]; roleIds: string[] } {
+  const store = readStore();
+  return store.whitelist[guildId] ?? { userIds: [], roleIds: [] };
+}
+
+function addToWhitelist(guildId: string, type: "user" | "role", id: string): boolean {
+  const store = readStore();
+  if (!store.whitelist[guildId]) store.whitelist[guildId] = { userIds: [], roleIds: [] };
+  const wl = store.whitelist[guildId];
+  const list = type === "user" ? wl.userIds : wl.roleIds;
+  if (list.includes(id)) return false;
+  list.push(id);
+  writeStore(store);
+  return true;
+}
+
+function removeFromWhitelist(guildId: string, type: "user" | "role", id: string): boolean {
+  const store = readStore();
+  if (!store.whitelist[guildId]) return false;
+  const wl = store.whitelist[guildId];
+  if (type === "user") {
+    if (!wl.userIds.includes(id)) return false;
+    wl.userIds = wl.userIds.filter((x) => x !== id);
+  } else {
+    if (!wl.roleIds.includes(id)) return false;
+    wl.roleIds = wl.roleIds.filter((x) => x !== id);
+  }
+  writeStore(store);
+  return true;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function isAdmin(member: GuildMember): boolean {
   return member.permissions.has(PermissionFlagsBits.Administrator);
+}
+
+function isWhitelisted(member: GuildMember): boolean {
+  if (isAdmin(member)) return true;
+  const wl = getWhitelist(member.guild.id);
+  if (wl.userIds.includes(member.id)) return true;
+  return member.roles.cache.some((r) => wl.roleIds.includes(r.id));
 }
 
 async function getOrFindQuarantineRole(message: Message): Promise<Role | null> {
@@ -177,8 +223,8 @@ export async function handleSetupQuarantine(message: Message): Promise<void> {
 
 export async function handleQuarantine(message: Message): Promise<void> {
   if (!message.guild || !message.member) return;
-  if (!isAdmin(message.member)) {
-    await message.reply("❌ You need Administrator permission to use `,q`.");
+  if (!isWhitelisted(message.member)) {
+    await message.reply("❌ You don't have permission to use `,q`.");
     return;
   }
 
@@ -253,8 +299,8 @@ export async function handleQuarantine(message: Message): Promise<void> {
 
 export async function handleReleaseQuarantine(message: Message): Promise<void> {
   if (!message.guild || !message.member) return;
-  if (!isAdmin(message.member)) {
-    await message.reply("❌ You need Administrator permission to use `,rq`.");
+  if (!isWhitelisted(message.member)) {
+    await message.reply("❌ You don't have permission to use `,rq`.");
     return;
   }
 
@@ -302,4 +348,80 @@ export async function handleReleaseQuarantine(message: Message): Promise<void> {
     .setTimestamp();
 
   await message.reply({ embeds: [embed] });
+}
+
+// ─── ,wq — Manage quarantine whitelist ────────────────────────────────────────
+
+export async function handleWhitelistQuarantine(message: Message): Promise<void> {
+  if (!message.guild || !message.member) return;
+  if (!isAdmin(message.member)) {
+    await message.reply("❌ You need Administrator permission to use `,wq`.");
+    return;
+  }
+
+  const guild = message.guild;
+  const args = message.content.trim().split(/\s+/);
+  // args[0] = ",wq"  args[1] = "remove" | mention  args[2] = mention (if remove)
+
+  const isRemove = args[1]?.toLowerCase() === "remove";
+
+  const mentionedUser = message.mentions.users.first();
+  const mentionedRole = message.mentions.roles.first();
+
+  if (!mentionedUser && !mentionedRole) {
+    await message.reply(
+      "**Usage:**\n" +
+      "`,wq @role` — whitelist a role\n" +
+      "`,wq @user` — whitelist a user\n" +
+      "`,wq remove @role` — remove a role from whitelist\n" +
+      "`,wq remove @user` — remove a user from whitelist",
+    );
+    return;
+  }
+
+  if (isRemove) {
+    if (mentionedRole) {
+      const removed = removeFromWhitelist(guild.id, "role", mentionedRole.id);
+      await message.reply(
+        removed
+          ? `✅ Removed <@&${mentionedRole.id}> from the quarantine whitelist.`
+          : `ℹ️ <@&${mentionedRole.id}> was not on the whitelist.`,
+      );
+    } else if (mentionedUser) {
+      const removed = removeFromWhitelist(guild.id, "user", mentionedUser.id);
+      await message.reply(
+        removed
+          ? `✅ Removed <@${mentionedUser.id}> from the quarantine whitelist.`
+          : `ℹ️ <@${mentionedUser.id}> was not on the whitelist.`,
+      );
+    }
+    return;
+  }
+
+  // Add to whitelist
+  if (mentionedRole) {
+    const added = addToWhitelist(guild.id, "role", mentionedRole.id);
+    const wl = getWhitelist(guild.id);
+    const embed = new EmbedBuilder()
+      .setColor(Colors.Blurple)
+      .setTitle("📋 Quarantine Whitelist Updated")
+      .addFields(
+        { name: added ? "Role Added" : "Already Listed", value: `<@&${mentionedRole.id}>`, inline: true },
+      )
+      .setFooter({ text: `${wl.roleIds.length} role(s), ${wl.userIds.length} user(s) on whitelist` })
+      .setTimestamp();
+    await message.reply({ embeds: [embed] });
+  } else if (mentionedUser) {
+    const added = addToWhitelist(guild.id, "user", mentionedUser.id);
+    const wl = getWhitelist(guild.id);
+    const embed = new EmbedBuilder()
+      .setColor(Colors.Blurple)
+      .setTitle("📋 Quarantine Whitelist Updated")
+      .addFields(
+        { name: added ? "User Added" : "Already Listed", value: `<@${mentionedUser.id}>`, inline: true },
+      )
+      .setFooter({ text: `${wl.roleIds.length} role(s), ${wl.userIds.length} user(s) on whitelist` })
+      .setTimestamp();
+    await message.reply({ embeds: [embed] });
+  }
 }

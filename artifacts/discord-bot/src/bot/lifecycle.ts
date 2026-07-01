@@ -38,7 +38,7 @@ import { handleAbcdAdmin } from "../admin/panel.js";
 import { handleDmCommand } from "../admin/dm.js";
 import { handleRoleAllCandc } from "../admin/roleAllChannels.js";
 import { handleAntiNukeCommand } from "../antinuke/index.js";
-import { handleSetupQuarantine, handleQuarantine, handleReleaseQuarantine } from "../moderation/quarantine.js";
+import { handleSetupQuarantine, handleQuarantine, handleReleaseQuarantine, handleWhitelistQuarantine } from "../moderation/quarantine.js";
 import { runJsonMigration } from "../migrate-json.js";
 
 const BOT_DISPLAY_NAME = "Last Stand Management";
@@ -367,6 +367,11 @@ export function registerLifecycleEvents(
 
     if (lower.startsWith(",rq ") || lower === ",rq") {
       await handleReleaseQuarantine(message).catch((err) => console.error("[RQ] Unhandled error:", err));
+      return;
+    }
+
+    if (lower.startsWith(",wq ") || lower === ",wq") {
+      await handleWhitelistQuarantine(message).catch((err) => console.error("[WQ] Unhandled error:", err));
       return;
     }
 
