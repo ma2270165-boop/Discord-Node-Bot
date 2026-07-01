@@ -172,8 +172,8 @@ export async function handleCopyCommand(message: Message, _client: Client): Prom
   }
 
   const status = await message.reply({ embeds: [new EmbedBuilder().setColor(0xFFAA00)
-    .setTitle("⏳ Capturing Server Snapshot")
-    .setDescription("Reading all roles, channels, emojis, stickers and soundboard…\nThis may take a moment.")]});
+    .setTitle("saving the server rn")
+    .setDescription("give it a sec, reading everything…")]});
 
   try {
     const guild = message.guild;
@@ -283,8 +283,8 @@ export async function handleCopyCommand(message: Message, _client: Client): Prom
 
     await status.edit({ embeds: [new EmbedBuilder()
       .setColor(0x00FFFF)
-      .setTitle("✅ Server Snapshot Saved")
-      .setDescription(`Snapshot taken at <t:${Math.floor(snap.takenAt / 1000)}:T>. Use \`?paste\` to restore missing items.`)
+      .setTitle("saved")
+      .setDescription(`done at <t:${Math.floor(snap.takenAt / 1000)}:T> — run \`?paste\` whenever u need to restore`)
       .addFields(
         { name: "🎭 Roles",      value: `**${roles.filter(r => !r.isEveryone).length}** captured`, inline: true },
         { name: "📁 Categories", value: `**${cats.length}** captured`,                             inline: true },
@@ -313,8 +313,8 @@ export async function handlePasteCommand(message: Message, client: Client): Prom
   }
 
   const status = await message.reply({ embeds: [new EmbedBuilder().setColor(0xFFAA00)
-    .setTitle("⏳ Loading Snapshot")
-    .setDescription("Reading saved snapshot from database…")]});
+    .setTitle("on it")
+    .setDescription("pulling up the snapshot…")]});
 
   try {
     const guild = message.guild;
@@ -330,8 +330,8 @@ export async function handlePasteCommand(message: Message, client: Client): Prom
     const takenAt = new Date(snap.takenAt).toLocaleString();
 
     await status.edit({ embeds: [new EmbedBuilder().setColor(0xFFAA00)
-      .setTitle("🔄 Restoring Server…")
-      .setDescription(`Snapshot from **${takenAt}**\nCreating missing roles, categories, channels, emojis, stickers and sounds…\n*(This may take a while — please wait)*`)]});
+      .setTitle("putting it back together")
+      .setDescription(`snapshot from **${takenAt}** — adding back what's missing, give it a min`)]});
 
     // Counters
     let rolesCreated = 0,    rolesSkipped = 0;
@@ -564,15 +564,15 @@ export async function handlePasteCommand(message: Message, client: Client): Prom
 
     const embed = new EmbedBuilder()
       .setColor(errors.length === 0 ? 0x00FFFF : 0xFFAA00)
-      .setTitle(errors.length === 0 ? "✅ Restore Complete" : "⚠️ Restore Complete (with some errors)")
-      .setDescription(`Snapshot from **${takenAt}**`)
+      .setTitle(errors.length === 0 ? "done" : "done (some stuff failed tho)")
+      .setDescription(`restored from **${takenAt}**`)
       .addFields(
-        { name: "🎭 Roles",      value: `✅ ${rolesCreated} created\n⏭️ ${rolesSkipped} already exist`,    inline: true },
-        { name: "📁 Categories", value: `✅ ${catsCreated} created\n⏭️ ${catsSkipped} already exist`,     inline: true },
-        { name: "💬 Channels",   value: `✅ ${chCreated} created\n⏭️ ${chSkipped} already exist`,         inline: true },
-        { name: "😀 Emojis",    value: `✅ ${emojisCreated} created\n⏭️ ${emojisSkipped} already exist`,  inline: true },
-        { name: "🎨 Stickers",  value: `✅ ${stickersCreated} created\n⏭️ ${stickersSkipped} already exist`, inline: true },
-        { name: "🔊 Soundboard", value: `✅ ${soundsCreated} created\n⏭️ ${soundsSkipped} already exist`, inline: true },
+        { name: "Roles",      value: `${rolesCreated} added · ${rolesSkipped} already there`,    inline: true },
+        { name: "Categories", value: `${catsCreated} added · ${catsSkipped} already there`,     inline: true },
+        { name: "Channels",   value: `${chCreated} added · ${chSkipped} already there`,         inline: true },
+        { name: "Emojis",     value: `${emojisCreated} added · ${emojisSkipped} already there`,  inline: true },
+        { name: "Stickers",   value: `${stickersCreated} added · ${stickersSkipped} already there`, inline: true },
+        { name: "Soundboard", value: `${soundsCreated} added · ${soundsSkipped} already there`, inline: true },
       );
 
     if (errors.length > 0) {
@@ -604,11 +604,8 @@ export async function runPasteRestore(guild: Guild, client: Client): Promise<{ f
       found: false,
       embed: new EmbedBuilder()
         .setColor(0xFFAA00)
-        .setTitle("⚠️ No ?copy Snapshot Found")
-        .setDescription(
-          "The anti-nuke fired but there is no saved `?copy` snapshot to restore from.\n" +
-          "Run `?copy` after setting up your server so future nukes can be auto-restored.",
-        ),
+        .setTitle("no snapshot found")
+        .setDescription("caught the nuke but there's no `?copy` save to restore from — run `?copy` when the server's clean so we can use it next time"),
     };
   }
 
@@ -770,15 +767,15 @@ export async function runPasteRestore(guild: Guild, client: Client): Promise<{ f
 
   const embed = new EmbedBuilder()
     .setColor(errors.length === 0 ? 0x00FF99 : 0xFFAA00)
-    .setTitle(errors.length === 0 ? "✅ Auto-Restore Complete" : "⚠️ Auto-Restore Complete (with errors)")
-    .setDescription(`Automatically restored from \`?copy\` snapshot taken **${takenAt}**.`)
+    .setTitle(errors.length === 0 ? "server's back" : "server's back (some stuff failed)")
+    .setDescription(`restored from snapshot — **${takenAt}**`)
     .addFields(
-      { name: "🎭 Roles",      value: `✅ ${rolesCreated} created\n⏭️ ${rolesSkipped} existed`,    inline: true },
-      { name: "📁 Categories", value: `✅ ${catsCreated} created\n⏭️ ${catsSkipped} existed`,     inline: true },
-      { name: "💬 Channels",   value: `✅ ${chCreated} created\n⏭️ ${chSkipped} existed`,         inline: true },
-      { name: "😀 Emojis",    value: `✅ ${emojisCreated} created\n⏭️ ${emojisSkipped} existed`,  inline: true },
-      { name: "🎨 Stickers",  value: `✅ ${stickersCreated} created\n⏭️ ${stickersSkipped} existed`, inline: true },
-      { name: "🔊 Soundboard", value: `✅ ${soundsCreated} created\n⏭️ ${soundsSkipped} existed`, inline: true },
+      { name: "Roles",      value: `${rolesCreated} added · ${rolesSkipped} already there`,    inline: true },
+      { name: "Categories", value: `${catsCreated} added · ${catsSkipped} already there`,     inline: true },
+      { name: "Channels",   value: `${chCreated} added · ${chSkipped} already there`,         inline: true },
+      { name: "Emojis",     value: `${emojisCreated} added · ${emojisSkipped} already there`,  inline: true },
+      { name: "Stickers",   value: `${stickersCreated} added · ${stickersSkipped} already there`, inline: true },
+      { name: "Soundboard", value: `${soundsCreated} added · ${soundsSkipped} already there`, inline: true },
     );
 
   if (errors.length > 0) {
@@ -804,8 +801,8 @@ export async function handlePasteIntCommand(message: Message, _client: Client): 
   }
 
   const status = await message.reply({ embeds: [new EmbedBuilder().setColor(0xFFAA00)
-    .setTitle("⏳ Running integrity cleanup…")
-    .setDescription("Comparing server against snapshot — removing duplicates and unrecognised channels…")]});
+    .setTitle("cleaning up")
+    .setDescription("removing anything that shouldn't be there…")]});
 
   try {
     const guild = message.guild;
@@ -875,20 +872,18 @@ export async function handlePasteIntCommand(message: Message, _client: Client): 
 
     await status.edit({ embeds: [new EmbedBuilder()
       .setColor(failed === 0 ? 0x00FFFF : 0xFFAA00)
-      .setTitle(failed === 0 ? "✅ Cleanup Done" : "⚠️ Cleanup Done (some failed)")
-      .setDescription(`Compared against snapshot from **${takenAt}**.`)
+      .setTitle(failed === 0 ? "cleaned up" : "cleaned up (some failed)")
       .addFields(
-        { name: "Removed",  value: `**${deleted}** channel(s) deleted`,                                              inline: true },
-        { name: "Failed",   value: failed > 0 ? `**${failed}** couldn't be deleted (check permissions)` : "None",   inline: true },
-        { name: "What was removed", value:
+        { name: "Deleted",  value: `${deleted} channel(s)`,                                              inline: true },
+        { name: "Failed",   value: failed > 0 ? `${failed} (missing perms probably)` : "none",           inline: true },
+        { name: "What got removed", value:
             toDelete.length === 0
-              ? "*Nothing — server already matches the snapshot.*"
+              ? "nothing — server already matched the snapshot"
               : toDelete.map(i => `• #${i.name}`).slice(0, 20).join("\n") +
                 (toDelete.length > 20 ? `\n…and ${toDelete.length - 20} more` : ""),
           inline: false,
         },
-      )
-      .setFooter({ text: "Only channels not in the ?copy snapshot were removed." })]});
+      )]});
 
   } catch (err) {
     console.error("[PASTE INT]", err);
@@ -921,8 +916,8 @@ export async function handlePasteMaxCommand(message: Message, client: Client): P
   }
 
   const status = await message.reply({ embeds: [new EmbedBuilder().setColor(0xFF0000)
-    .setTitle("💣 Paste Max — Wiping & Rebuilding")
-    .setDescription("Deleting all channels and roles, then rebuilding from snapshot.\n**This will take a while — do not interrupt.**")]});
+    .setTitle("wiping everything")
+    .setDescription("deleting all channels and roles then rebuilding — this'll take a min, don't do anything")]});
 
   const guild = message.guild;
   let chDeleted = 0, roleDeleted = 0, failed = 0;
@@ -958,13 +953,13 @@ export async function handlePasteMaxCommand(message: Message, client: Client): P
   }
 
   await status.edit({ embeds: [new EmbedBuilder().setColor(0xFFAA00)
-    .setTitle("🔄 Wipe done — rebuilding from snapshot…")
-    .setDescription(`Deleted **${chDeleted}** channel(s) and **${roleDeleted}** role(s).\nNow recreating everything from the \`?copy\` snapshot…`)]});
+    .setTitle("wiped — rebuilding now")
+    .setDescription(`deleted ${chDeleted} channels and ${roleDeleted} roles — putting everything back from the snapshot`)]});
 
   // ── 3. Full paste restore ──────────────────────────────────────────────────
   const { embed: restoreEmbed } = await runPasteRestore(guild, client);
   restoreEmbed
-    .setTitle("✅ Paste Max Complete")
+    .setTitle("all done")
     .addFields({ name: "Wipe", value: `${chDeleted} channels + ${roleDeleted} roles deleted${failed > 0 ? ` (${failed} failed)` : ""}`, inline: false });
 
   await status.edit({ embeds: [restoreEmbed] });
